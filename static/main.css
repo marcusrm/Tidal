@@ -1,0 +1,38 @@
+/* (c) Copyright 2015 Purdue University - MIT License*/
+
+input#message_input, div.message {
+    padding:       0em;
+    margin:        0em;
+    font-size:     16pt
+    font-family:   serif;
+    border-style:  solid;
+    border-radius: 0em;
+    width:         600px;
+}
+
+div.message {
+    border-color:  LightGray;
+    border-width:  1px;
+}
+
+.square{
+    height:100px;
+    width:100px;
+    position: absolute;
+}
+
+.unselectable{
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+input#message_input {
+    border-color:  Green;
+    border-width:  2px;
+}
+
+/* vim: set fileencoding=utf-8 tabstop=4 shiftwidth=4 expandtab: */
