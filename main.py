@@ -17,7 +17,7 @@ settings = {
     "cookie_secret" : "Blorp",
     "xsrf_cookies" : False,
 }
-    
+PORT=8008
 active_users = set()
 PASSWORD_DB = 'static/passwords.db'
 PASSWORD_SCHEMA = 'static/passwords.sql'
@@ -27,12 +27,12 @@ MAX_SIZE_PASSWORD=32
 MIN_SIZE_USERNAME=8
 MIN_SIZE_PASSWORD=8
     
-def validate_username_password(target_username,target_password):
+def validate_username_password(target_username,target_password,mode):
     print "in validate username"
     errors = []
     bad_chars_username = set('''<>/\;:'"|{}[]-+=().,?!@#$%^&* ''')
     bad_chars_password = set('''<>/\;:'"|{}[]-+=().,''')
-    
+
     conn = sqlite3.connect(PASSWORD_DB)
     c = conn.cursor()
     c.execute('SELECT * FROM passwords where username = ?',
@@ -40,8 +40,10 @@ def validate_username_password(target_username,target_password):
     query_result = c.fetchone()
     conn.close()
     
-    if query_result is not None:
+    if query_result is not None and mode is "signup":
         errors.append("username already exists")
+    elif query_result is None and mode is "signin":
+        errors.append("username doesn't exist")
         
     #test some conditions & accumulate errors
     if any ((c in bad_chars_username) for c in target_username):
@@ -75,7 +77,20 @@ def register_new_user(username,password):
     conn.close()
 
 def login_user(username, password):
-    print "hi"
+    conn = sqlite3.connect(PASSWORD_DB)
+    c = conn.cursor()
+    
+    with open(SALT,'r') as f:
+        salt = f.read()
+    hashed_password = hashlib.sha512(password + salt).hexdigest()
+    
+    c.execute('SELECT * FROM passwords where username = ?',[username])
+    query_result = c.fetchone()
+    conn.close()
+    if query_result[1] != hashed_password:
+        return ["wrong password"]
+    else:
+        return []
     
 class BaseHandler(tornado.web.RequestHandler):
     #overload get_current_user function
@@ -98,17 +113,36 @@ class LoginHandler(BaseHandler):
         if self.current_user: #if they're already logged in:
             self.redirect("/secret")
         else:
-            username = self.get_argument("username");
-            password = self.get_argument("password");
-            errs = validate_username_password(username,password);
-            if not errs:        
-                register_new_user(username,password)
-                self.set_secure_cookie("user", self.get_argument("username"))
-                self.redirect("/secret")
+            username = self.get_argument("username")
+            password = self.get_argument("password")
+            errs= []
+            
+            if self.get_argument("submit_button") == "Sign up":
+                errs += validate_username_password(username,password,"signup")
+                if not errs:     #username and password were fomatted well                  
+                    register_new_user(username,password)
+                    self.set_secure_cookie("user",
+                                           self.get_argument("username"), 
+                                           expires_days=None)
+                    
+            elif( self.get_argument("submit_button") == "Sign in"):
+                errs += validate_username_password(username,password,"signin")
+                if not errs:                    
+                    errs += login_user(username,password)
+                if not errs:
+                    self.set_secure_cookie("user",
+                                           self.get_argument("username"),
+                                           expires_days=None)
+                    
             else:
+                self.write("No cheating!"); return
+            
+            if errs :
                 for x in (errs):
-                    self.write(x+"<br>");
+                    self.write(x+"<br>")
                 self.render("login.html")
+            else:
+                self.redirect("/secret")    
             
         
 class LogoutHandler(BaseHandler):
@@ -123,16 +157,21 @@ class secretHandler(BaseHandler):
         self.render("secret.html")
 
     def post(self):
-        if self.get_argument("logout"):
+        if self.get_argument("logout",None):
             self.redirect("/logout")
+        if self.get_argument("login",None):
+            self.redirect("/login")
 
 class indexHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         self.render("index.html")
         
+class missingHandler(BaseHandler):
+    def get(self):
+        self.render("404.html")
+        
 def init_app():
-    #loginRouter = SockJSRouter(loginConnection,'/login')
 
     password_db_missing = not os.path.exists(PASSWORD_DB)
     if(password_db_missing):
@@ -153,15 +192,15 @@ def init_app():
     return Application([url(r"/login", LoginHandler),
                         url(r"/logout", LogoutHandler),
                         url(r"/secret", secretHandler),
-                        url(r"/", indexHandler)]
-                       #+ loginRouter.urls,
+                        url(r"/", indexHandler),
+                        url(r"/.*", missingHandler)]
                        ,
                        **settings
                        )
 
 if __name__ ==  "__main__":
     app = init_app()
-    app.listen(8008)
+    app.listen(PORT)
     IOLoop.instance().start()
 
 

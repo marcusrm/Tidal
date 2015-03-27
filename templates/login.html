@@ -6,29 +6,8 @@
 
 	<link rel="stylesheet" type="text/css" href="static/main.css">
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
-	<script src="http://cdn.jsdelivr.net/sockjs/0.3/sockjs.min.js"></script>
 
 	<script>
-    <!-- 	  ws = new SockJS('http://127.0.0.1:8008/login'); -->
-	  
-    <!-- 	  ws.onmessage = function(event) { -->
-    <!-- 	       var msg = JSON.parse(event.data); -->
-    <!-- 	       if(msg.is_error) -->
-    <!--                alert(msg.err_msg); -->
-    <!-- 	  }; -->
-
-    <!-- 	  var isMouseDown = 1; -->
-	  
-    <!-- $(window).mousemove(function(event){ -->
-    <!--     if(isMouseDown){ -->
-    <!--         var coords = { -->
-    <!--             xpos: event.clientX, -->
-    <!--             ypos: event.clientY -->
-    <!--         } -->
-    <!--         var sendmsg = JSON.stringify(coords); -->
-    <!--         ws.send(sendmsg); -->
-    <!--     } -->
-    <!-- }); -->
     	  
 	</script>
 
@@ -36,10 +15,18 @@
 </head>  
 <body>
 
+  <h3>Existing Users:</h3>
   <form action="/login" method="post">
     Username: <input type="text" name="username">
     Password: <input type="password" name="password">
-    <input type="submit" value="Sign in">
+    <input type="submit" name="submit_button" value="Sign in">
+  </form>
+
+  <h3>New Users:</h3>
+  <form action="/login" method="post">
+    Username: <input type="text" name="username">
+    Password: <input type="password" name="password">
+    <input type="submit" name="submit_button" value="Sign up">
   </form>
   
 
