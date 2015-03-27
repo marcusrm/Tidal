@@ -4,10 +4,10 @@ from tornado.web import RequestHandler, Application, url
 from tornado.websocket import WebSocketHandler
 from sockjs.tornado import SockJSRouter, SockJSConnection
 import tornado.gen
+import tornado.escape
 import os
 import sqlite3
-
-active_users = set()
+import hashlib, uuid
 
 settings = {
     "login_url": "/login",
@@ -18,28 +18,57 @@ settings = {
     "xsrf_cookies" : False,
 }
     
-# class EchoConnection(SockJSConnection):
+active_users = set()
+PASSWORD_DB = 'static/passwords.db'
+PASSWORD_SCHEMA = 'static/passwords.sql'
+SALT = 'static/salt.bin'
 
-#     def on_open(self, info):
-#         # Send that someone joined
-#         #print "JOINED!!"
-#         self.broadcast(self.active_users, "New Player!")
+def validate_password(target_password):
+    print "in validate password"
+    errors = []
+    #test some conditions & accumulate errors
+    if target_password != "blorp":
+        errors.append("why isn't your password blorp?")
+        
+    return errors
+    
+def validate_username(target_username):
+    print "in validate username"
+    errors = []
+    
+    conn = sqlite3.connect(PASSWORD_DB)
+    c = conn.cursor()
+    query_result = c.execute('SELECT * FROM passwords where username = ?', [target_username])
+    conn.close()
+    
+    if query_result is not None:
+        errors.append("username already exists")
+        
+    #test some conditions & accumulate errors
+    if target_username != "blorp":
+        errors.append("why isn't your username blorp?")
+        
+    return errors
+    
+def register_new_user(username,password):
+    print "in register new user"
+    
+    conn = sqlite3.connect(PASSWORD_DB)
+    c = conn.cursor()
+    with open(SALT,'r') as f:
+        salt = f.read()
 
-#         # Add client to the clients list
-#         self.active_users.add(self)
+    print salt
+    hashed_password = hashlib.sha512(password + salt).hexdigest()
 
-#     def on_message(self, message):
-#         # Broadcast message
-#         #print "bc!!"
-#         self.broadcast(self.active_users, message)
+    c.execute('INSERT INTO passwords (username,hashed_password)'\
+              'values (?,?)',[username,hashed_password])
+    
+    conn.close()
 
-#     def on_close(self):
-#         # Remove client from the clients list and broadcast leave message
-#         #print "CLOSED"
-#         self.active_users.remove(self)
-
-#         self.broadcast(self.active_users, "X disconnected...")
-
+def login_user(username, password):
+    print "hi"
+    
 class BaseHandler(tornado.web.RequestHandler):
     #overload get_current_user function
     #to return username only if it's attached to
@@ -58,11 +87,21 @@ class LoginHandler(BaseHandler):
         self.render("login.html")
         
     def post(self):
-        if self.current_user:
-            self.redirect("/login")
-        else:
-            self.set_secure_cookie("user", self.get_argument("username"))
+        if self.current_user: #if they're already logged in:
             self.redirect("/secret")
+        else:
+            username = self.get_argument("username");
+            password = self.get_argument("password");
+            uv_errs = validate_username(username);
+            pv_errs = validate_password(password);
+            if not pv_errs and not uv_errs:        
+                register_new_user(username,password)
+                self.set_secure_cookie("user", self.get_argument("username"))
+                self.redirect("/secret")
+            else:
+                #self.render("login.html")
+                for x in (pv_errs+uv_errs):
+                    self.write(x+"<br>");
             
         
 class LogoutHandler(BaseHandler):
@@ -85,18 +124,36 @@ class indexHandler(BaseHandler):
     def get(self):
         self.render("index.html")
         
-def make_app():
-    EchoRouter = SockJSRouter(EchoConnection,'/echo')
+def init_app():
+    #loginRouter = SockJSRouter(loginConnection,'/login')
+
+    password_db_missing = not os.path.exists(PASSWORD_DB)
+    if(password_db_missing):
+        conn = sqlite3.connect(PASSWORD_DB)
+        c = conn.cursor()
+        with open(PASSWORD_SCHEMA,'rt') as f:
+            schema = f.read()
+        c.executescript(schema)
+        conn.close()
+        
+    salt_missing = not os.path.exists(SALT)
+    if(salt_missing):
+        salt = uuid.uuid4().hex
+        with open(SALT,'w') as f:
+            f.write(salt)
+    
+    
     return Application([url(r"/login", LoginHandler),
                         url(r"/logout", LogoutHandler),
                         url(r"/secret", secretHandler),
                         url(r"/", indexHandler)]
-                       + EchoRouter.urls,
+                       #+ loginRouter.urls,
+                       ,
                        **settings
                        )
 
 if __name__ ==  "__main__":
-    app = make_app()
+    app = init_app()
     app.listen(8008)
     IOLoop.instance().start()
 
