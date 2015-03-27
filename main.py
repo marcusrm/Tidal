@@ -22,31 +22,40 @@ active_users = set()
 PASSWORD_DB = 'static/passwords.db'
 PASSWORD_SCHEMA = 'static/passwords.sql'
 SALT = 'static/salt.bin'
-
-def validate_password(target_password):
-    print "in validate password"
-    errors = []
-    #test some conditions & accumulate errors
-    if target_password != "blorp":
-        errors.append("why isn't your password blorp?")
-        
-    return errors
+MAX_SIZE_USERNAME=32
+MAX_SIZE_PASSWORD=32
+MIN_SIZE_USERNAME=8
+MIN_SIZE_PASSWORD=8
     
-def validate_username(target_username):
+def validate_username_password(target_username,target_password):
     print "in validate username"
     errors = []
+    bad_chars_username = set('''<>/\;:'"|{}[]-+=().,?!@#$%^&* ''')
+    bad_chars_password = set('''<>/\;:'"|{}[]-+=().,''')
     
     conn = sqlite3.connect(PASSWORD_DB)
     c = conn.cursor()
-    query_result = c.execute('SELECT * FROM passwords where username = ?', [target_username])
+    c.execute('SELECT * FROM passwords where username = ?',
+              [target_username])
+    query_result = c.fetchone()
     conn.close()
     
     if query_result is not None:
         errors.append("username already exists")
         
     #test some conditions & accumulate errors
-    if target_username != "blorp":
-        errors.append("why isn't your username blorp?")
+    if any ((c in bad_chars_username) for c in target_username):
+        errors.append("bad chars in username!")
+    if any ((c in bad_chars_password) for c in target_password):
+        errors.append("bad chars in password!")
+    if len(target_username) > MAX_SIZE_USERNAME:
+        errors.append("too many characters in username!")
+    if len(target_username) < MIN_SIZE_USERNAME:
+        errors.append("too few characters in username!")
+    if len(target_password) > MAX_SIZE_PASSWORD:
+        errors.append("too many characters in password!")
+    if len(target_password) < MIN_SIZE_PASSWORD:
+        errors.append("too few characters in password!")
         
     return errors
     
@@ -58,12 +67,11 @@ def register_new_user(username,password):
     with open(SALT,'r') as f:
         salt = f.read()
 
-    print salt
     hashed_password = hashlib.sha512(password + salt).hexdigest()
 
     c.execute('INSERT INTO passwords (username,hashed_password)'\
               'values (?,?)',[username,hashed_password])
-    
+    conn.commit()
     conn.close()
 
 def login_user(username, password):
@@ -92,16 +100,15 @@ class LoginHandler(BaseHandler):
         else:
             username = self.get_argument("username");
             password = self.get_argument("password");
-            uv_errs = validate_username(username);
-            pv_errs = validate_password(password);
-            if not pv_errs and not uv_errs:        
+            errs = validate_username_password(username,password);
+            if not errs:        
                 register_new_user(username,password)
                 self.set_secure_cookie("user", self.get_argument("username"))
                 self.redirect("/secret")
             else:
-                #self.render("login.html")
-                for x in (pv_errs+uv_errs):
+                for x in (errs):
                     self.write(x+"<br>");
+                self.render("login.html")
             
         
 class LogoutHandler(BaseHandler):
