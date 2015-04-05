@@ -4,14 +4,12 @@ W.remove()
 W.login(WID,TYPE)
 W.logout(WID)
 
-
 # TASK MGR INTERFACE
 W.assign(TYPE,TID)
 W.complete(WID)
 
 W.assign returns WID if worker has been assigned else returns False
 W.complete returns True if Worker status has been updated
-
 
 TYPE: ['branch','leaf','sap']
 TID: # Task Id

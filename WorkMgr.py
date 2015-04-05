@@ -34,11 +34,7 @@ class W(object):
 	# Check WID for special characters
 	def check(WID):
 		WID=str(WID)
-		chars = set('$&#%,')
-		if any((c in chars) for c in WID):
-			return False
-		else:
-			return True
+		return WID.isalnum()
 			
 	# Remove WID From Lists
 	def Lremove(WID):
@@ -60,6 +56,7 @@ class W(object):
 		WID=str(WID)
 		if W.check(WID):
 			w[WID]=W(WID)			# Add to pool
+			W.Loffline.append(WID)
 			return True
 		else:
 			return False
@@ -79,13 +76,18 @@ class W(object):
 			return False
 	
 	# Login Worker
-	def login(WID,TYPE):
+	def login(WID,TYPE='default'):
 		global w
 		WID=str(WID)
+		if(TYPE=='default'):
+			print('Worker Login Type defaulted: leaf')
+			TYPE='leaf'
+			
 		try:
 			if W.check(WID) & W.check(TYPE):
 				# Update Class lists for idle and online workers
 				W.Lonline.append(WID)
+				W.Loffline.remove(WID)
 				W.Lidle.append(WID)
 				
 				# Update specific worker and Class list
@@ -105,9 +107,12 @@ class W(object):
 					
 				return True
 			else:
+				print('Check WID')
 				return False
 		except:
+			print('Login Error')
 			return False
+
 	# Logout Worker
 	def logout(WID,TYPE):
 		global w
@@ -143,6 +148,7 @@ class W(object):
 			else:
 				return False
 		except:
+			print('Error')
 			return False
 
 	# Assign Task to Worker
@@ -161,6 +167,7 @@ class W(object):
 			
 	# To display details of worker
 	def disp(self):
+		print('Status: '+str(self.status))
 		print('WID: '+str(self.WID))
 		print('TID: '+str(self.TID))
 		print('Type:'+str(self.type))
@@ -169,6 +176,10 @@ class W(object):
 	def dispL():
 		print('Online List')
 		print(W.Lonline)
+		print('\n\n\n')
+		
+		print('Offline List')
+		print(W.Loffline)
 		print('\n\n\n')
 		
 		print('Idle List')
