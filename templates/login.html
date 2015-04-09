@@ -1,35 +1,30 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<!-- (c) Copyright 2015 Purdue University - MIT License -->
+<html >
 <head>
-	<meta charset="utf-8">
-	<title>Tidal</title>
+  <meta charset="utf-8">
+  <title>Login to Tidal</title>
+  <link rel="stylesheet" href="{{ static_url("main.css") }}">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
 
-	<link rel="stylesheet" type="text/css" href="static/main.css">
-	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+  <script>
+    
 
-	<script>
-    	  
-	</script>
+  </script>
 
+</head>
+<body >
 
-</head>  
-<body>
+  <!-- Text input for new messages -->
+  are you a requester or developer?
 
-  <h3>Existing Users:</h3>
-  <form action="/login" method="post">
-    Username: <input type="text" name="username">
-    Password: <input type="password" name="password">
-    <input type="submit" name="submit_button" value="Sign in">
+  <form action="/08/login" method="post">
+    <input type="submit" name="requester" value="requester">
   </form>
-
-  <h3>New Users:</h3>
-  <form action="/login" method="post">
-    Username: <input type="text" name="username">
-    Password: <input type="password" name="password">
-    <input type="submit" name="submit_button" value="Sign up">
+  <form action="/08/login" method="post">
+    <input type="submit" name="developer" value="developer">
   </form>
   
-
 </body>
 </html>
-
+<!-- vim: set fileencoding=utf-8 tabstop=2 shiftwidth=2 expandtab: -->
