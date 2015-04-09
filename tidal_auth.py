@@ -122,7 +122,7 @@ class reqLoginHandler(BaseHandler):
             self.write("you have a cookie.<br>")
             self.write("your cookie is: "+self.current_user)
             
-        self.render("rlogin.html")
+        self.render("rlogin.html",url_prefix=URL_PREFIX)
         
     def post(self):
         if self.current_user: #if they're already logged in:
@@ -155,7 +155,7 @@ class reqLoginHandler(BaseHandler):
             if errs :
                 for x in (errs):
                     self.write(x+"<br>")
-                self.render("rlogin.html")
+                self.render("rlogin.html",url_prefix=URL_PREFIX)
             else:
                 self.redirect(URL_PREFIX+"/secret")    
           
@@ -167,7 +167,7 @@ class devLoginHandler(BaseHandler):
             self.write("you have a cookie.<br>")
             self.write("your cookie is: "+self.current_user)
             
-        self.render("dlogin.html")
+        self.render("dlogin.html",url_prefix=URL_PREFIX)
         
     def post(self):
         if self.current_user: #if they're already logged in:
@@ -187,7 +187,7 @@ class devLoginHandler(BaseHandler):
             if errs :
                 for x in (errs):
                     self.write(x+"<br>")
-                self.render("dlogin.html")
+                self.render("dlogin.html",url_prefix=URL_PREFIX)
             else:
                 self.redirect(URL_PREFIX+"/secret")    
 
@@ -199,7 +199,7 @@ class wrkLoginHandler(BaseHandler):
             
 class loginHandler(BaseHandler):
     def get(self):
-        self.render("login.html")
+        self.render("login.html",url_prefix=URL_PREFIX)
     def post(self):
         if self.get_argument("requester",None):
             self.redirect(URL_PREFIX+"/rlogin")
@@ -215,7 +215,7 @@ class logoutHandler(BaseHandler):
 class secretHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("secret.html")
+        self.render("secret.html",url_prefix=URL_PREFIX)
 
     def post(self):
         if self.get_argument("logout",None):
@@ -226,17 +226,17 @@ class secretHandler(BaseHandler):
 class indexHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("index.html")
+        self.render("index.html",url_prefix=URL_PREFIX)
         
 class hitHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("hit.html")
+        self.render("hit.html",url_prefix=URL_PREFIX)
         
 class missingHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("404.html")
+        self.render("404.html",url_prefix=URL_PREFIX)
         
 
 
