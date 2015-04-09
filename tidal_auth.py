@@ -102,10 +102,9 @@ class BaseHandler(RequestHandler):
             print "dev cookie"
             return dev_cookie
         
-        if(URL_PREFIX+"dev" not in self.request.uri and
-           URL_PREFIX+"hit" not in self.request.uri and
+        if((URL_PREFIX+"/dev") not in self.request.uri and
+           (URL_PREFIX+"/hit") not in self.request.uri and
            req_cookie is not None):
-            print "req cookie"
             return req_cookie
 
         if(wrk_cookie is not None and
