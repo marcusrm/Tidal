@@ -8,18 +8,11 @@ import tornado.escape
 import os
 import sqlite3
 import hashlib, uuid
+import tidal_settings as ts
 
-PASSWORD_DB = 'static/passwords.db'
-PASSWORD_SCHEMA = 'static/passwords.sql'
-SALT = 'static/salt.bin'
-MAX_SIZE_USERNAME=32
-MAX_SIZE_PASSWORD=32
-MIN_SIZE_USERNAME=8
-MIN_SIZE_PASSWORD=8
+amt_task_ids = {}
+pending_tasks = {}
 
-PORT=8008
-URL_PREFIX = '/%02d'%(PORT % 100)
-    
 def validate_username_password(target_username,target_password,mode):
     print "in validate username"
     errors = []
@@ -31,19 +24,19 @@ def validate_username_password(target_username,target_password,mode):
         errors.append("bad chars in username!")
     if any ((c in bad_chars_password) for c in target_password):
         errors.append("bad chars in password!")
-    if len(target_username) > MAX_SIZE_USERNAME:
+    if len(target_username) > ts.MAX_SIZE_USERNAME:
         errors.append("too many characters in username!")
-    if len(target_username) < MIN_SIZE_USERNAME:
+    if len(target_username) < ts.MIN_SIZE_USERNAME:
         errors.append("too few characters in username!")
-    if len(target_password) > MAX_SIZE_PASSWORD:
+    if len(target_password) > ts.MAX_SIZE_PASSWORD:
         errors.append("too many characters in password!")
-    if len(target_password) < MIN_SIZE_PASSWORD:
+    if len(target_password) < ts.MIN_SIZE_PASSWORD:
         errors.append("too few characters in password!")
 
     if errors is not None:
         return errors
         
-    conn = sqlite3.connect(PASSWORD_DB)
+    conn = sqlite3.connect(ts.PASSWORD_DB)
     c = conn.cursor()
     c.execute('SELECT * FROM passwords where username = ?',
               [target_username])
@@ -63,9 +56,9 @@ def validate_username_password(target_username,target_password,mode):
 def register_new_user(username,password,is_admin):
     print "in register new user"
     
-    conn = sqlite3.connect(PASSWORD_DB)
+    conn = sqlite3.connect(ts.PASSWORD_DB)
     c = conn.cursor()
-    with open(SALT,'r') as f:
+    with open(ts.SALT,'r') as f:
         salt = f.read()
 
     hashed_password = hashlib.sha512(password + salt).hexdigest()
@@ -76,10 +69,10 @@ def register_new_user(username,password,is_admin):
     conn.close()
 
 def login_user(username, password):
-    conn = sqlite3.connect(PASSWORD_DB)
+    conn = sqlite3.connect(ts.PASSWORD_DB)
     c = conn.cursor()
     
-    with open(SALT,'r') as f:
+    with open(ts.SALT,'r') as f:
         salt = f.read()
     hashed_password = hashlib.sha512(password + salt).hexdigest()
     
@@ -102,14 +95,14 @@ class BaseHandler(RequestHandler):
             print "dev cookie"
             return dev_cookie
         
-        if((URL_PREFIX+"/dev") not in self.request.uri and
-           (URL_PREFIX+"/hit") not in self.request.uri and
+        if((ts.URL_PREFIX+"/dev") not in self.request.uri and
+           (ts.URL_PREFIX+"/hit") not in self.request.uri and
            req_cookie is not None):
             return req_cookie
 
         if(wrk_cookie is not None and
-           self.request.uri is URL_PREFIX+"/hit" and
-           self.request.remote_ip is "192.168.1.1"):
+           self.request.uri is ts.URL_PREFIX+"/hit" and
+           self.request.remote_ip is "192.168.1.1"): #todo, AMT ip
             print "worker cookie"
             return wrk_cookie
 
@@ -122,11 +115,11 @@ class reqLoginHandler(BaseHandler):
             self.write("you have a cookie.<br>")
             self.write("your cookie is: "+self.current_user)
             
-        self.render("rlogin.html",url_prefix=URL_PREFIX)
+        self.render("rlogin.html",url_prefix=ts.URL_PREFIX)
         
     def post(self):
         if self.current_user: #if they're already logged in:
-            self.redirect(URL_PREFIX+"/secret")
+            self.redirect(ts.URL_PREFIX+"/secret")
         else:
             username = self.get_argument("username")
             password = self.get_argument("password")
@@ -155,9 +148,9 @@ class reqLoginHandler(BaseHandler):
             if errs :
                 for x in (errs):
                     self.write(x+"<br>")
-                self.render("rlogin.html",url_prefix=URL_PREFIX)
+                self.render("rlogin.html",url_prefix=ts.URL_PREFIX)
             else:
-                self.redirect(URL_PREFIX+"/secret")    
+                self.redirect(ts.URL_PREFIX+"/secret")    
           
 class devLoginHandler(BaseHandler):
     def get(self):
@@ -167,11 +160,11 @@ class devLoginHandler(BaseHandler):
             self.write("you have a cookie.<br>")
             self.write("your cookie is: "+self.current_user)
             
-        self.render("dlogin.html",url_prefix=URL_PREFIX)
+        self.render("dlogin.html",url_prefix=ts.URL_PREFIX)
         
     def post(self):
         if self.current_user: #if they're already logged in:
-            self.redirect(URL_PREFIX+"/secret")
+            self.redirect(ts.URL_PREFIX+"/secret")
         else:
             username = self.get_argument("username")
             password = self.get_argument("password")
@@ -187,24 +180,51 @@ class devLoginHandler(BaseHandler):
             if errs :
                 for x in (errs):
                     self.write(x+"<br>")
-                self.render("dlogin.html",url_prefix=URL_PREFIX)
+                self.render("dlogin.html",url_prefix=ts.URL_PREFIX)
             else:
-                self.redirect(URL_PREFIX+"/secret")    
+                self.redirect(ts.URL_PREFIX+"/secret")    
 
 class wrkLoginHandler(BaseHandler):
     def get(self):
-        
-        if(1):
-            self.redirect(URL_PREFIX+"/hit")
+        workerId = self.get_argument("workerId")
+        task_id = self.get_argument("task_id")
+        assignmentId = self.get_argument("assignmentId")
+
+        # if(self.request.remote_ip is not AMT_IP):
+        #     self.write("not an official request from AMT")
+        #     self.render("404.html")
+
+        elif(task_id is None or workerId is None ):
+            self.write("Missing worker or task ID")
+            self.render("404.html")
+
+        elif(task_id not in amt_task_ids or not validate_worker(workerId)):
+            self.write("bad task id or worker ID")
+            self.render("404.html")
+            
+        else:
+            if( assignmentId is None or
+                assignmentId is "ASSIGNMENT_ID_NOT_AVAILABLE"):
+                self.render("hit_preview.html")
+            else:
+                amt_task_ids.remove(task_id) #remove this task_id
+                pending_tasks.add(task_id) #move task to pending
+                w.add(workerId)#add worker to pool
+                self.redirect(ts.URL_PREFIX+"/hit")
+                
+        else:
+            self.write("fallthrough on wrklogin.")
+            self.render("404.html")
+            
             
 class loginHandler(BaseHandler):
     def get(self):
-        self.render("login.html",url_prefix=URL_PREFIX)
+        self.render("login.html",url_prefix=ts.URL_PREFIX)
     def post(self):
         if self.get_argument("requester",None):
-            self.redirect(URL_PREFIX+"/rlogin")
+            self.redirect(ts.URL_PREFIX+"/rlogin")
         if self.get_argument("developer",None):
-            self.redirect(URL_PREFIX+"/dlogin")
+            self.redirect(ts.URL_PREFIX+"/dlogin")
         
 class logoutHandler(BaseHandler):
     @tornado.web.authenticated
@@ -215,28 +235,23 @@ class logoutHandler(BaseHandler):
 class secretHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("secret.html",url_prefix=URL_PREFIX)
+        self.render("secret.html",url_prefix=ts.URL_PREFIX)
 
     def post(self):
         if self.get_argument("logout",None):
-            self.redirect(URL_PREFIX+"/logout")
+            self.redirect(ts.URL_PREFIX+"/logout")
         if self.get_argument("login",None):
-            self.redirect(URL_PREFIX+"/login")
+            self.redirect(ts.URL_PREFIX+"/login")
 
-class indexHandler(BaseHandler):
-    @tornado.web.authenticated
-    def get(self):
-        self.render("index.html",url_prefix=URL_PREFIX)
-        
 class hitHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("hit.html",url_prefix=URL_PREFIX)
+        self.render("hit.html",url_prefix=ts.URL_PREFIX)
         
 class missingHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("404.html",url_prefix=URL_PREFIX)
+        self.render("404.html",url_prefix=ts.URL_PREFIX)
         
 
 
