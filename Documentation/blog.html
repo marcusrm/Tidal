@@ -42,7 +42,7 @@
             </div>
           </div>
 	  
-              <p>Upon loading, our webserver will check how many existing HITs have been posted on AMT, and automatically generate new ones if a minimum number is not met. Additionally, whenever a worker logs in to our site, we generate a new HIT if our <i>Worker Manager</i> decides that it needs more workers. A worker only needs to take one HIT per "session", because they will stay inside that HIT's iframe on AMT, but they are completing multiple HITs on the local Tidal server. We decided that this would help improve the workflow on our site so workers had to do less page navigation.  </p>
+          <p>Upon loading, our webserver will check how many existing HITs have been posted on AMT, and automatically generate new ones if a minimum number is not met. Additionally, whenever a worker logs in to our site, we generate a new HIT if our <i>Worker Manager</i> decides that it needs more workers. A worker only needs to take one HIT per "session", because they will stay inside that HIT's iframe on AMT, but they are completing multiple HITs on the local Tidal server. We decided that this would help improve the workflow on our site so workers had to do less page navigation.  </p>
           <p>A running total of the number of local HITs completed and total amount earned is always present in the corner of the worker's screen. The worker's pay accumulates as bonuses since they are technically only performing one HIT on AMT. This total is automatically saved to disk after each interaction with a worker in case the server crashes. The worker can logout at any time with the logout button, which will end their Tidal session, and generate a payout for the original HIT on AMT.</p>
 	  
           <p>We hope that the idea of performing multiple HITs without immediate payment doesn't scare away too many workers. A tutorial hit will be required of each worker the first time they log in to our site which will explain how Tidal works and what it is. Hopefully this tutorial will help workers get a better understanding of what we're doing and encourage them to come back.</p>
@@ -55,18 +55,32 @@
 	  
           <div class="row">
             <div class="large-6 columns">
-              <p>Bacon ipsum dolor sit amet nulla ham qui sint exercitation eiusmod commodo, chuck duis velit. Aute in reprehenderit, dolore aliqua non est magna in labore pig pork biltong. Eiusmod swine spare ribs reprehenderit culpa.</p>
-              <p>Boudin aliqua adipisicing rump corned beef. Nulla corned beef sunt ball tip, qui bresaola enim jowl. Capicola short ribs minim salami nulla nostrud pastrami.</p>
+
+	      <p>The Worker Manager(WM) performs the task of managing an active worker pool, storing information regarding each worker and keeps track of remuneration. The WM is provided as a self-sufficient class with numerous methods that serve as APIs to the other modules in the project. For each worker, an instance of the worker class is instantiated. However, the interface is with the class itself thereby abstracting away the complexity of handling the low level information of each worker and the pool. The WM has the following functions:
+
             </div>
             <div class="large-6 columns">
               <img src="http://placehold.it/400x240&text=[img]"/>
             </div>
           </div>
 	  
-          <p>Pork drumstick turkey fugiat. Tri-tip elit turducken pork chop in. Swine short ribs meatball irure bacon nulla pork belly cupidatat meatloaf cow. Nulla corned beef sunt ball tip, qui bresaola enim jowl. Capicola short ribs minim salami nulla nostrud pastrami. Nulla corned beef sunt ball tip, qui bresaola enim jowl. Capicola short ribs minim salami nulla nostrud pastrami.</p>
-	  
-          <p>Pork drumstick turkey fugiat. Tri-tip elit turducken pork chop in. Swine short ribs meatball irure bacon nulla pork belly cupidatat meatloaf cow. Nulla corned beef sunt ball tip, qui bresaola enim jowl. Capicola short ribs minim salami nulla nostrud pastrami.</p>
-	  
+	  <ul>
+	    <li><p>Worker addition and login: </p>
+	      <p>For new workers sign-ups, an object is created in a database. The workers can then be logged in upon which they are added onto an idle list and their profile is made online. Similarly, if the worker or WM chooses to logout the worker after task completion, remuneration is provided and the worker is made offline. These are provided as APIs to the TM and Authentication Manager(AM). Also upon login, socket objects corresponding to each worker are stored within the worker class instance.</p>
+	    </li>
+
+	    <li><p>Worker Profile:  </p>
+	      <p>Each worker's task completion history, remuneration and point system for how good a leafer, brancher or sapper is recorded. The worker profile is provided as a way of also motivating the worker with non-monetary incentives.</p>
+	    </li>
+
+	    <li><p>Active worker pool management:  </p>
+	     <p> Maintaining an active on-demand worker pool is key to being able to complete tasks quickly. This is achieved by keeping the worker's HIT page open and indicating task assignment through alerts in the title of the page. Also, the WM is able to calculate if more workers would be required and interfaces with the AM to put out HITs on Amazon Mechanical Turk(AMT) to add workers to the pool. Similarly, an excess work-force is reduced by remunerating workers on task completion and logging them out.</p> 
+	    </li>
+
+	    <li><p>Worker assignment and task completion:  </p>
+	      <p>This is provided as an API to the TM where specific type of workers can be requested for by providing a Task Id. Upon selecting an active, idle and type of worker, the Worker Id is returned to the TM.  At the same time, the Task Id is linked to the particular worker to keep track of what tasks are being assigned to each worker. Upon task completion, the Worker Id is returned to the idle pool waiting to be given additional tasks and the remuneration counter is updated. If the number of workers far exceed the number required to maintain a sufficient active pool, the excess workers upon task completion are remunerated and logged out of the system.</p>
+	    </li>
+
         </article>
 
 	
@@ -86,17 +100,17 @@
             </div>
           </div>
 
-	      <p>Hence, there is a need to manage this tree structure and monitor each task for 4 conditions –
-		<ul>
-		  <li>Branching</li>
-		  <li>Completion</li>
-		  <li>Rework</li>
-		  <li>Approval</li>
-		</ul>
-	      </p>
+	  <p>Hence, there is a need to manage this tree structure and monitor each task for 4 conditions –
+	    <ul>
+	      <li>Branching</li>
+	      <li>Completion</li>
+	      <li>Rework</li>
+	      <li>Approval</li>
+	    </ul>
+	  </p>
 
-	      <p> These functions are carried out by the task manager. We limit the number of branches to 5 in order to maintain a fair pay and fair work policy. Have a greater number of branches disrupts the balance of branch-leaf workers and does not compliment our design.</p>
-              
+	  <p> These functions are carried out by the task manager. We limit the number of branches to 5 in order to maintain a fair pay and fair work policy. Have a greater number of branches disrupts the balance of branch-leaf workers and does not compliment our design.</p>
+          
         </article>
 	
 	
