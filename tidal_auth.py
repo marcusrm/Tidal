@@ -9,9 +9,7 @@ import os
 import sqlite3
 import hashlib, uuid
 import tidal_settings as ts
-
-amt_task_ids = {}
-pending_tasks = {}
+import tidal_amt as t_amt
 
 def validate_username_password(target_username,target_password,mode):
     print "in validate username"
@@ -208,8 +206,13 @@ class wrkLoginHandler(BaseHandler):
                 self.render("hit_preview.html")
             else:
                 amt_task_ids.remove(task_id) #remove this task_id
-                pending_tasks.add(task_id) #move task to pending
+                ts.t_pending.add(task_id) #move task to pending
                 w.add(workerId)#add worker to pool
+
+                #post new hits if hits < min. add to list 
+                if(len(ts.task_amt) < ts.task_amt_desired):
+                    new_hits = t_amt.post_hit(ts.T_AMT_MIN - len(ts.task_amt))
+                    ts.task_amt
                 self.redirect(ts.URL_PREFIX+"/hit")
                 
         else:
@@ -243,10 +246,10 @@ class secretHandler(BaseHandler):
         if self.get_argument("login",None):
             self.redirect(ts.URL_PREFIX+"/login")
 
-class hitHandler(BaseHandler):
-    @tornado.web.authenticated
-    def get(self):
-        self.render("hit.html",url_prefix=ts.URL_PREFIX)
+# class hitHandler(BaseHandler):
+#     @tornado.web.authenticated
+#     def get(self): 
+#         self.render("hit.html",url_prefix=ts.URL_PREFIX)
         
 class missingHandler(BaseHandler):
     @tornado.web.authenticated

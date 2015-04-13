@@ -10,7 +10,7 @@ TIME_LIMIT = 3600
 KEYWORDS = ["categorize", "names"]
 AUTOPAY_DELAY = 3600*.5
 
-PUB_URL = "https://crowd.ecn.purdue.edu"+ts.URL_PREFIX+"/hit/"
+PUB_URL = "https://crowd.ecn.purdue.edu:"+ts.PORT+ts.URL_PREFIX+"/hit/"
 MAX_ASSIGNMENTS = 1
 LIFETIME = 3600*10
 
@@ -22,37 +22,32 @@ hit_type = cl.create_hit_type(title = "Join the rising tide!",
                               keywords = KEYWORDS, 
                               autopay_delay = AUTOPAY_DELAY)
 
-class amt_iface:
-    def post_hit(self,n_tasks):
+def post_hit(n_tasks):
 
-        task_id = []
-        hit = []
-        for t in range(0,n_tasks):
-            task_id.append((uuid.uuid4().hex)[0:6])
+    amt_task_id = []
+    hit = []
+    for t in range(0,n_tasks):
+        amt_task_id.append((uuid.uuid4().hex)[0:6])
         
         # Create a HIT type, with the title and description for this group of HITs.
-
+        
         # Post a HIT.
-        for t in task_id:
-            hit.append(hit_type.create_hit(url = PUB_URL + "?task_id=" + t,
-                                           height = 500,
-                                           max_assignments = MAX_ASSIGNMENTS,
-                                           lifetime = LIFETIME,
-                                       )
-                   )
-            print "hit posted to URL: " , PUB_URL + "?task_id=" + t         
+    for t in amt_task_id:
+        hit.append(hit_type.create_hit(url = PUB_URL + "?amt_task_id=" + t,
+                                       height = 500,
+                                       max_assignments = MAX_ASSIGNMENTS,
+                                       lifetime = LIFETIME,
+                                )
+               )
+        print "hit posted to URL: " , PUB_URL + "?amt_task_id=" + t         
 
-        return dict(zip(task_id,hit))
+    return dict(zip(amt_task_id,hit))
             
             
-    def cancel_hits(self):
-        cl.set_all_hits_unavailable()
-        print "hits cancelled!"
+def cancel_hits():
+    cl.set_all_hits_unavailable()
+    print "hits cancelled!"
 
-    def report(self):
-        print "oops"
-
-ai = amt_iface()
-ai.post_hit(1)
-ai.cancel_hits()
+def report():
+    print "oops"
 

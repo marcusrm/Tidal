@@ -8,6 +8,7 @@ import sqlite3
 import tidal_auth as ta
 import hashlib, uuid
 import tidal_settings as ts
+import task_manager as tm
 
 app_settings = {
     "login_url": ts.URL_PREFIX+"/login",
@@ -45,8 +46,9 @@ def init_app():
                         url(ts.URL_PREFIX+ r"/login", ta.loginHandler),
                         url(ts.URL_PREFIX+ r"/logout", ta.logoutHandler),
                         url(ts.URL_PREFIX+ r"/secret", ta.secretHandler),
-                        url(ts.URL_PREFIX+ r"/hit", ta.hitHandler),
-                        url(r"/.*", ta.missingHandler)]
+                        url(ts.URL_PREFIX+ r"/hit", tm.hitHandler),
+                        url(r"/.*", ta.missingHandler),
+                        url(ts.URL_PREFIX+ r"/websocket", tm.WebSocketHandler)]
                        ,
                        **app_settings
                        )
