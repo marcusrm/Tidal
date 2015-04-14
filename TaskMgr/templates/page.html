@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title> Worker Pooling</title>
+        <link rel="stylesheet" type="text/css" href="{{ static_url("mystyle.css") }}" media="screen">
+        <script src="http://code.jquery.com/jquery.min.js"></script>
+    </head>
+    
+    <body style="font-family: Lekton; font-size: 15pt">
+        <div id="page">
+            <p id="welcome" style="width: 800px ">Welcome to my Crowd-Task page</p>   
+        <!-- Auth form -->
+            <form id="register" onsubmit="EnableForm()" action="javascript:void(0);" method="GET">
+                <div id="reg_left" style="float:left;">
+                    Register with an ID to enable page. 
+                </div>
+            
+                <div id="reg_right" style="float:right margin-right:10px">
+                        <input type="text" id="auth_form_name" name = "auth_form_name" placeholder="Enter your WorkerID to enable the task"
+                    style="height = 500px width=500px">
+                    <input type="submit" value="Register">
+                </div>
+            </form>
+            <div id="taskbody" style="clear:both">
+                <p>The task you are part of requires 3 workers. Hence, you can watch the monitor for the status of the worker pool! Hopefully, the pool will get filled soon ! In the meanwhile, chat with the current workers in the pool using the dialogue box below. </p> 
+
+            <!-- Display box -->
+                <div id="chatbox" style=" float:left; font-size: 13pt; height: 300px; width: 500px; overflow: scroll; border: 1px solid black">
+
+                </div>
+            <!-- Table -->
+                <table id="worktable" style="float:right ; border: 1px solid black ;float:right;">
+                    <thead>
+                        <tr>
+                            <th> Worker Monitor </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+
+                <!-- Form : has textbox and submit button-->
+                  <form id="main_task" style = "clear:both;" onsubmit="DispatchText()" action="javascript:void(0);">
+                    <input type="text" id="message" name="message" autocomplete="off" disabled="disabled" />
+                    <input type="submit" id="sub" name="sub" value="Send" disabled="disabled"  style="width:90px" />
+                </form>
+            </div>
+        </div>
+    <!-- Script section -->
+        <script type="text/javascript">
+        var ws;
+        var worker_count = 0;
+
+            function delrow(cellname)
+            {
+                try
+                {
+                    var table = document.getElementById("worktable");
+                    var rowCount = table.rows.length;
+                    for(var i=0; i<rowCount; i++)
+                    {
+
+                        var row = table.rows[i];
+                        var name = row.cells[0];
+                        console.log("Length =" + rowCount + "compare "+name.innerText +" and " + cellname);
+                        if (name.innerText == cellname)
+                        { 
+                            console.log("Deleting row "+(i+1) +" with id = " + cellname);
+                            table.deleteRow(i);
+                            break;
+
+                        }
+                    }
+                }
+                catch(e)
+                {
+                    alert(e);
+                }
+            }
+
+            function addrow(cellname,pos)
+            {
+                console.log("Insert table row")
+                var table = document.getElementById("worktable");
+                var rowCount;
+                if(pos == "first")
+                    rowCount = 1;
+                else
+                    rowCount = table.rows.length;
+                var row = table.insertRow(rowCount);
+                var cell = row.insertCell(0);
+                cell.innerHTML = cellname; 
+                return ;
+            }
+
+            function EnableForm()
+            {
+                console.log("Entered enableform");
+            // Extract userID and open a socket with ID as a query string 
+                var client_name = document.getElementById("auth_form_name").value;
+                var ws_url = "ws://localhost:8888/websocket?Id="+client_name;
+                ws = new WebSocket(ws_url);
+                console.log("Websocket created = "+ws_url);
+
+                console.log("Insert table row")
+               // addrow(client_name,"first");
+            // Websocket on message event is redefined 
+                ws.onmessage = function(evt)
+                {
+                    data = evt.data;
+                    console.log("message event: "+ data)
+                    if(data.indexOf("ADD:") >= 0)
+                    {
+                        console.log("Found name for table");
+                        var name = data.replace(/ADD:/g,'');
+                        addrow(name,"last");
+                    }
+                    else if(evt.data.indexOf("DEL:") >= 0)
+                    {   
+                        var name = data.replace(/DEL:/g,'');
+                        console.log("Deleting " + name + " from table");
+                        delrow(name);
+                    }
+                    else if (evt.data !="declined")
+                    {
+                        x = document.createElement("p");
+                        x.innerHTML = evt.data ;
+                        document.getElementById("chatbox").appendChild(x);
+                    }
+                    
+                }
+                ws.onopen = function(evt)
+                {
+                    worker_count++;
+                    console.log("Number of workers = " + worker_count);
+                }
+
+                ws.onclose = function(evt)
+                {
+                    delrow(evt.data);
+                    worker_count--;
+                    console.log("Number of workers = " + worker_count);   
+                }
+                ws.onerror = function(evt)
+                {
+                    console.log("Error = " + evt.data);
+                }
+            // Enable the task form 
+                $('#main_task').children().removeAttr('disabled');
+                return false;
+            }
+ 
+           function DispatchText(){
+            //Get data from form 
+            var userInput = document.getElementById("message").value;
+           /* HTML */
+            document.getElementById("message").value = "";
+            x = document.createElement("p");
+            x.innerHTML = "You sent: " + userInput;
+            //document.getElementById("chatbox").appendChild(x);
+            console.log("Sending form to server - state = " + ws.readyState)
+            ws.send(userInput);
+            return false
+        }
+        </script>
+    </body>
+</html>
