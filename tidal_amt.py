@@ -7,10 +7,12 @@ import tidal_settings as ts
 
 BASE_REWARD = 0.05
 TIME_LIMIT = 3600
-KEYWORDS = ["categorize", "names"]
+KEYWORDS = ["tidal"]
 AUTOPAY_DELAY = 3600*.5
 
-PUB_URL = "https://hci.ecn.purdue.edu:"+str(ts.PORT)+ts.URL_PREFIX+"/wlogin/"
+PUB_URL = "https://crowd.ecn.purdue.edu"+ts.URL_PREFIX+"/wlogin"
+#PUB_URL = "http://127.0.0.1:"+str(ts.PORT)+ts.URL_PREFIX+"/wlogin"
+
 MAX_ASSIGNMENTS = 1
 LIFETIME = 3600*10
 

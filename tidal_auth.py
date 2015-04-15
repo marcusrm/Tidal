@@ -1,8 +1,7 @@
-
+#!/usr/bin/python2.7
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url
 from tornado.websocket import WebSocketHandler
-from sockjs.tornado import SockJSRouter, SockJSConnection
 import tornado.gen
 import tornado.escape
 import os
@@ -31,7 +30,7 @@ def validate_username_password(target_username,target_password,mode):
     if len(target_password) < ts.MIN_SIZE_PASSWORD:
         errors.append("too few characters in password!")
 
-    if errors is not None:
+    if errors:
         return errors
         
     conn = sqlite3.connect(ts.PASSWORD_DB)
@@ -43,12 +42,12 @@ def validate_username_password(target_username,target_password,mode):
     
     if query_result is not None and mode is "signup":
         errors.append("username already exists")
-    elif query_result is None and mode is not "signup":
+    elif query_result is None and mode != "signup":
         errors.append("username doesn't exist")
     elif(mode is "signin_dev" and query_result is not None 
          and query_result[2] is 0):
         errors.append("username is not a devloper")
-        
+
     return errors
     
 def register_new_user(username,password,is_admin):
@@ -140,6 +139,7 @@ class reqLoginHandler(BaseHandler):
             elif( self.get_argument("submit_button") == "Sign in"):
                 errs += validate_username_password(username,password,"signin")
                 if not errs:
+                    print errs
                     errs += login_user(username,password)
                 if not errs:
                     self.set_secure_cookie("req",
@@ -190,15 +190,19 @@ class devLoginHandler(BaseHandler):
                 
 class wrkLoginHandler(BaseHandler):
     def get(self):
-        workerId = self.get_argument("workerId")
-        amt_task_id = self.get_argument("amt_task_id")
-        assignmentId = self.get_argument("assignmentId")
+        workerId = self.get_argument("workerId",None)
+        amt_task_id = self.get_argument("amt_task_id",None)
+        assignmentId = self.get_argument("assignmentId",None)
 
         # if(self.request.remote_ip is not AMT_IP):
         #     self.write("not an official request from AMT")
         #     self.render("404.html")
-
-        if(amt_task_id is None or workerId is None ):
+        print assignmentId
+        if( assignmentId is None or
+                assignmentId == "ASSIGNMENT_ID_NOT_AVAILABLE"):
+                self.render("hit_preview.html")
+                
+        elif(amt_task_id is None or workerId is None ):
             self.write("Missing worker or task ID")
             self.render("404.html")
 
@@ -207,27 +211,23 @@ class wrkLoginHandler(BaseHandler):
             self.render("404.html")
             
         else:
-            if( assignmentId is None or
-                assignmentId is "ASSIGNMENT_ID_NOT_AVAILABLE"):
-                self.render("hit_preview.html")
-            else:
-                ts.task_amt_pending.update(
-                    {amt_task_id : ts.task_amt[amt_task_id]})#move task to pending
-                del ts.task_amt[amt_task_id] #remove this task_id
-                ts.w.append(workerId)#add worker to pool
-                self.set_secure_cookie("wrk",workerId,expires_days=None)
-
-                #post new hits if hits < min. add to list 
-                if(len(ts.task_amt) < ts.task_amt_desired):
-                    new_hits = t_amt.post_hit(ts.task_amt_desired - len(ts.task_amt))
-                    ts.task_amt.update(new_hits)
+            ts.task_amt_pending.update(
+                {amt_task_id : ts.task_amt[amt_task_id]})#move task to pending
+            del ts.task_amt[amt_task_id] #remove this task_id
+            ts.w.append(workerId)#add worker to pool
+            self.set_secure_cookie("wrk",workerId,expires_days=None)
+            
+            #post new hits if hits < min. add to list 
+            if(len(ts.task_amt) < ts.task_amt_desired):
+                new_hits = t_amt.post_hit(ts.task_amt_desired - len(ts.task_amt))
+                ts.task_amt.update(new_hits)
                 
-                self.redirect(ts.URL_PREFIX+"/hit"+"?workerId="+workerId+"&amt_task_id="+amt_task_id)
-                #you can add more or less arguments here. You probably don't
-                #need anything besides the worker id and the amt_task_id,
-                #which you can use to look up info on that amt HIT. I think it's
-                #probably just as good as having the assignment id.
-         
+            self.redirect(ts.URL_PREFIX+"/hit"+"?workerId="+workerId+"&amt_task_id="+amt_task_id)
+            #you can add more or less arguments here. You probably don't
+            #need anything besides the worker id and the amt_task_id,
+            #which you can use to look up info on that amt HIT. I think it's
+            #probably just as good as having the assignment id.
+            
             
 class loginHandler(BaseHandler):
     def get(self):

@@ -2,7 +2,6 @@
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url
 from tornado.websocket import WebSocketHandler
-from sockjs.tornado import SockJSRouter, SockJSConnection
 import os
 import sqlite3
 import hashlib, uuid
@@ -45,7 +44,8 @@ def init_app():
         ta.register_new_user("adminadmin","crowdcrowd",1)
 
     #should check AMT for already posted hits, but for now
-    #let's just make some upon startup.
+    #let's just make some new ones upon startup.
+    t_amt.cancel_hits()
     if(len(ts.task_amt) < ts.task_amt_desired):
         new_hits = t_amt.post_hit(ts.task_amt_desired - len(ts.task_amt))
         ts.task_amt.update(new_hits)
