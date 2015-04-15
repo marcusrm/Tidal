@@ -11,12 +11,18 @@ import hashlib
 from tree import Tree
 import myconst
 
+import sys
+sys.path.append('../')
+import tidal_settings as ts
+import tidal_auth as ta
+
 TaskTree = Tree()
 TaskId = 0
 salt = 'clutter'
 workers = [ ]
 worker_dict = {}
-class hitHandler(tornado.web.RequestHandler):
+class hitHandler(ta.BaseHandler):
+    @tornado.web.authenticated
     def get(self):
     	global TaskId
     	print "\n****Get method " + str(TaskId);

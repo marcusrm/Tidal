@@ -66,6 +66,10 @@ def register_new_user(username,password,is_admin):
     conn.commit()
     conn.close()
 
+
+def validate_worker(workerId):
+    return True
+    
 def login_user(username, password):
     conn = sqlite3.connect(ts.PASSWORD_DB)
     c = conn.cursor()
@@ -96,14 +100,16 @@ class BaseHandler(RequestHandler):
         if((ts.URL_PREFIX+"/dev") not in self.request.uri and
            (ts.URL_PREFIX+"/hit") not in self.request.uri and
            req_cookie is not None):
+            print "req cookie"
             return req_cookie
 
         if(wrk_cookie is not None and
-           self.request.uri is ts.URL_PREFIX+"/hit" and
-           self.request.remote_ip is "192.168.1.1"): #todo, AMT ip
+           ts.URL_PREFIX+"/hit" in self.request.uri ):
+           #and self.request.remote_ip is "192.168.1.1") : #todo, AMT ip
             print "worker cookie"
             return wrk_cookie
 
+        print "no cookie"
         
 class reqLoginHandler(BaseHandler):
     def get(self):
@@ -181,22 +187,22 @@ class devLoginHandler(BaseHandler):
                 self.render("dlogin.html",url_prefix=ts.URL_PREFIX)
             else:
                 self.redirect(ts.URL_PREFIX+"/secret")    
-
+                
 class wrkLoginHandler(BaseHandler):
     def get(self):
         workerId = self.get_argument("workerId")
-        task_id = self.get_argument("task_id")
+        amt_task_id = self.get_argument("amt_task_id")
         assignmentId = self.get_argument("assignmentId")
 
         # if(self.request.remote_ip is not AMT_IP):
         #     self.write("not an official request from AMT")
         #     self.render("404.html")
 
-        elif(task_id is None or workerId is None ):
+        if(amt_task_id is None or workerId is None ):
             self.write("Missing worker or task ID")
             self.render("404.html")
 
-        elif(task_id not in amt_task_ids or not validate_worker(workerId)):
+        elif(not amt_task_id in ts.task_amt or not validate_worker(workerId)):
             self.write("bad task id or worker ID")
             self.render("404.html")
             
@@ -205,20 +211,23 @@ class wrkLoginHandler(BaseHandler):
                 assignmentId is "ASSIGNMENT_ID_NOT_AVAILABLE"):
                 self.render("hit_preview.html")
             else:
-                amt_task_ids.remove(task_id) #remove this task_id
-                ts.t_pending.add(task_id) #move task to pending
-                w.add(workerId)#add worker to pool
+                ts.task_amt_pending.update(
+                    {amt_task_id : ts.task_amt[amt_task_id]})#move task to pending
+                del ts.task_amt[amt_task_id] #remove this task_id
+                ts.w.append(workerId)#add worker to pool
+                self.set_secure_cookie("wrk",workerId,expires_days=None)
 
                 #post new hits if hits < min. add to list 
                 if(len(ts.task_amt) < ts.task_amt_desired):
-                    new_hits = t_amt.post_hit(ts.T_AMT_MIN - len(ts.task_amt))
-                    ts.task_amt
-                self.redirect(ts.URL_PREFIX+"/hit")
+                    new_hits = t_amt.post_hit(ts.task_amt_desired - len(ts.task_amt))
+                    ts.task_amt.update(new_hits)
                 
-        else:
-            self.write("fallthrough on wrklogin.")
-            self.render("404.html")
-            
+                self.redirect(ts.URL_PREFIX+"/hit"+"?workerId="+workerId+"&amt_task_id="+amt_task_id)
+                #you can add more or less arguments here. You probably don't
+                #need anything besides the worker id and the amt_task_id,
+                #which you can use to look up info on that amt HIT. I think it's
+                #probably just as good as having the assignment id.
+         
             
 class loginHandler(BaseHandler):
     def get(self):

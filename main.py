@@ -5,10 +5,14 @@ from tornado.websocket import WebSocketHandler
 from sockjs.tornado import SockJSRouter, SockJSConnection
 import os
 import sqlite3
-import tidal_auth as ta
 import hashlib, uuid
+import tidal_auth as ta
 import tidal_settings as ts
-import task_manager as tm
+import tidal_amt as t_amt
+
+import sys
+sys.path.append("./TaskMgr")
+import TaskMgr as tm
 
 app_settings = {
     "login_url": ts.URL_PREFIX+"/login",
@@ -39,6 +43,12 @@ def init_app():
     #if we had to reinit the password db, add the admin.
     if(password_db_missing):
         ta.register_new_user("adminadmin","crowdcrowd",1)
+
+    #should check AMT for already posted hits, but for now
+    #let's just make some upon startup.
+    if(len(ts.task_amt) < ts.task_amt_desired):
+        new_hits = t_amt.post_hit(ts.task_amt_desired - len(ts.task_amt))
+        ts.task_amt.update(new_hits)
             
     return Application([url(ts.URL_PREFIX+ r"/rlogin", ta.reqLoginHandler),
                         url(ts.URL_PREFIX+ r"/dlogin", ta.devLoginHandler),

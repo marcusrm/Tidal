@@ -12,8 +12,8 @@ MAX_SIZE_PASSWORD=32
 MIN_SIZE_USERNAME=8
 MIN_SIZE_PASSWORD=8
 
-task_amt_desired = 10
+task_amt_desired = 3
 task_amt_pending = {}
 task_amt = {}
 task_local = {}
-w = {}
+w = []#just a list right now, eventually it should be the entire worker obj.

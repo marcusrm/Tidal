@@ -10,7 +10,7 @@ TIME_LIMIT = 3600
 KEYWORDS = ["categorize", "names"]
 AUTOPAY_DELAY = 3600*.5
 
-PUB_URL = "https://crowd.ecn.purdue.edu:"+ts.PORT+ts.URL_PREFIX+"/hit/"
+PUB_URL = "https://hci.ecn.purdue.edu:"+str(ts.PORT)+ts.URL_PREFIX+"/wlogin/"
 MAX_ASSIGNMENTS = 1
 LIFETIME = 3600*10
 
@@ -42,7 +42,7 @@ def post_hit(n_tasks):
         print "hit posted to URL: " , PUB_URL + "?amt_task_id=" + t         
 
     return dict(zip(amt_task_id,hit))
-            
+
             
 def cancel_hits():
     cl.set_all_hits_unavailable()
