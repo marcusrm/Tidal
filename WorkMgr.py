@@ -1,15 +1,14 @@
 # WorkPool Manager
 
 # Methods:
-# W.add(WID): 		returns a True/False and requires input of Worker ID(WID) as string. Returns True/False
-# W.delete(WID): 	deletes the WID from the pool/database. Returns True/False
+# W.add(WID): 		returns a True/False and requires input of Worker ID(WID) as string.
+# W.remove(WID): 	removes the WID from the pool/database. Returns True/False
 # W.login(WID): 	logs in the respective WID. Returns True/False
 # W.logout(WID): 	logs out the respective WID. Returns True/False
-# W.assign(TID,Type): Assigns the Task ID (TID) to a given Type ("leaf","branch","sap"). Returns WID/False
+# W.assign(TID,Type): Assigns the Task ID (TID) to a given Type ("leaf","branch","sap").
 # W.print(WID): 	prints all info about worker
 
 class W(object):
-	
 	# Class Attributes
 	Loffline=[] 	# List of all offline workers
 	Lonline=[]		# List of all online workers
@@ -20,19 +19,21 @@ class W(object):
  
 	# Initialization
 	def __init__(self,WID):
-		self.WID=WID
+		self.WID=WID			# Worker ID-> 			WORKER ID
+		self.AID=False			# Assignment ID->		CURRENT AMT ASSIGNMENT ID
+		self.TID='NA'			# NA or assigned TID->	WORKER TASK STATUS
 		self.status='offline' 	# online, offline->    	WORKER STATUS
 		self.type='leaf'		# leaf, sap, branch-> 	WORKER TYPE
-		self.TID='NA'			# NA or assigned TID->	WORKER TASK STATUS
 		self.Socket=False		# SockObj or None-> 	WORKER SOCKET OBJECT
 		self.AmountEarned=0 	# Initialize Money Earned
-		
+
 		# Profile based information
 		self.TaskPend={}		# {'TID':AmountEarned,...}
 		self.TaskHist=[]		# List of all tasks done
 		self.Pt={'branch':0,'leaf':0,'sap':0}
 			
-	# Add Worker
+	# Add Worker	
+	@staticmethod
 	def add(WID):
 		global w
 		WID=str(WID)
@@ -44,11 +45,13 @@ class W(object):
 			return False
 
 	# Remove Worker
-	def delete(WID):
+	@staticmethod
+	def remove(WID):
 		global w
 		WID=str(WID)
 		if W.check(WID):
 			W.Lremove(WID)		# Removing worker from all lists
+			W.Loffline.remove(WID)
 			if WID in w:
 				w.pop(WID,None)		# Remove from database
 				return True
@@ -58,15 +61,19 @@ class W(object):
 			return False
 	
 	# Login Worker
-	def login(WID,TYPE='leaf',SockObj=False):
+	@staticmethod
+	def login(WID,AID,TYPE='leaf',SockObj=False):
 		global w
 		WID=str(WID)
 		if not(W.check(WID) & W.check(TYPE)):
 			print(str(WID)+': Invalid Arguments')
 			return False
-				
+		
+		if(AID==False):
+			print(str(WID)+' Login Error': No Assignment ID specified)
+		
 		if(SockObj==False):
-			print(str(WID)+': Socket Object not specified')
+			print(str(WID)+' login: Socket Object not specified')
 			
 		try:
 			if (WID in W.Loffline) and w[WID].status=='offline':
@@ -77,6 +84,9 @@ class W(object):
 				
 				# Update Socket Object for Worker
 				w[WID].Socket=SockObj
+				
+				# Associate WID with AID for current Login session
+				w[WID].AID=AID
 				
 				# Update specific worker and Class list
 				w[WID].status='online'
@@ -102,6 +112,7 @@ class W(object):
 			return False
 
 	# Logout Worker
+	@staticmethod
 	def logout(WID):
 		global w
 		WID=str(WID)
@@ -117,6 +128,7 @@ class W(object):
 			return False
 		
 	# Assign Task to Worker
+	@staticmethod
 	def assign(TYPE,TID):
 		global w
 		TYPE=str(TYPE)
@@ -144,6 +156,7 @@ class W(object):
 			return False
 
 	# Assign Task to Worker
+	@staticmethod
 	def complete(WID,TID,AmountPay=0):
 		global w
 		WID=str(WID)
@@ -160,10 +173,12 @@ class W(object):
 			return False
 		
 	# Add Task Pending Approval to Worker
+	@staticmethod
 	def pending(WID,TID,AmountPay=0):
 		pass
 		
 	# To display details of worker
+	@staticmethod
 	def disp(WID):
 		print('WID: '+str(w[WID].WID))
 		print('Status: '+str(w[WID].status))
@@ -177,6 +192,7 @@ class W(object):
 		print('    Sap:   '+str(w[WID].Pt['sap'])+'\n\n')
 		
 	# To display List Content
+	@staticmethod
 	def displ():
 		print('Online List')
 		print(W.Lonline)
@@ -203,21 +219,25 @@ class W(object):
 		print('\n\n\n')
 		
 	# To store socket object to worker
+	@staticmethod
 	def set_socket(WID,SockObj):
 		global w
 		w[WID].Socket=SockObj
 		
 	# To retrieve socket object to worker
+	@staticmethod
 	def get_socket(WID):
 		global w
 		return w[WID].Socket
 	
 	# Check WID for special characters
+	@staticmethod
 	def check(WID):
 		WID=str(WID)
 		return WID.isalnum()
 			
 	# Remove WID From Lists
+	@staticmethod
 	def Lremove(WID):
 		if W.check(WID):
 			if WID in W.Lidle:
@@ -236,6 +256,7 @@ class W(object):
 ##########################################################################
 # Initializing the Worker Dictionary
 w={}
+'''
 WID='1'
 W.add(WID)	
-W.login(WID)
+W.login(WID)'''
