@@ -23,32 +23,14 @@ app_settings = {
 }
 
 def init_app():
+
+    ta.init_password_db()
+    t_amt.init_amt_task_db()
     
-    password_db_missing = not os.path.exists(ts.PASSWORD_DB)
-    if(password_db_missing):
-        conn = sqlite3.connect(ts.PASSWORD_DB)
-        c = conn.cursor()
-        with open(ts.PASSWORD_SCHEMA,'rt') as f:
-            schema = f.read()
-        c.executescript(schema)
-        conn.close()
-        
-    salt_missing = not os.path.exists(ts.SALT)
-    if(salt_missing):
-        salt = uuid.uuid4().hex
-        with open(ts.SALT,'w') as f:
-            f.write(salt)
-
-    #if we had to reinit the password db, add the admin.
-    if(password_db_missing):
-        ta.register_new_user("adminadmin","crowdcrowd",1)
-
     #should check AMT for already posted hits, but for now
     #let's just make some new ones upon startup.
     t_amt.cancel_hits()
-    if(len(ts.task_amt) < ts.task_amt_desired):
-        new_hits = t_amt.post_hit(ts.task_amt_desired - len(ts.task_amt))
-        ts.task_amt.update(new_hits)
+    t_amt.post_hit(1)
             
     return Application([url(ts.URL_PREFIX+ r"/rlogin", ta.reqLoginHandler),
                         url(ts.URL_PREFIX+ r"/dlogin", ta.devLoginHandler),

@@ -9,6 +9,7 @@ import sqlite3
 import hashlib, uuid
 import tidal_settings as ts
 import tidal_amt as t_amt
+import WorkMgr as wm
 
 def validate_username_password(target_username,target_password,mode):
     print "in validate username"
@@ -214,13 +215,15 @@ class wrkLoginHandler(BaseHandler):
             ts.task_amt_pending.update(
                 {amt_task_id : ts.task_amt[amt_task_id]})#move task to pending
             del ts.task_amt[amt_task_id] #remove this task_id
-            ts.w.append(workerId)#add worker to pool
+            #ts.w.append(workerId)#add worker to pool
+            #wm.W.login(workerId)
+            
             self.set_secure_cookie("wrk",workerId,expires_days=None)
             
-            #post new hits if hits < min. add to list 
-            if(len(ts.task_amt) < ts.task_amt_desired):
-                new_hits = t_amt.post_hit(ts.task_amt_desired - len(ts.task_amt))
-                ts.task_amt.update(new_hits)
+            # #post new hits if hits < min. add to list 
+            # if(len(ts.task_amt) < ts.task_amt_desired):
+            #     new_hits = t_amt.post_hit(ts.task_amt_desired - len(ts.task_amt))
+            #     ts.task_amt.update(new_hits)
                 
             self.redirect(ts.URL_PREFIX+"/hit"+"?workerId="+workerId+"&amt_task_id="+amt_task_id)
             #you can add more or less arguments here. You probably don't
@@ -263,9 +266,27 @@ class secretHandler(BaseHandler):
 class missingHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("404.html",url_prefix=ts.URL_PREFIX)
-        
+        self.render("404.html",url_prefix=ts.URL_PREFIX)        
 
+def init_password_db():    
+    password_db_missing = not os.path.exists(ts.PASSWORD_DB)
+    if(password_db_missing):
+        conn = sqlite3.connect(ts.PASSWORD_DB)
+        c = conn.cursor()
+        with open(ts.PASSWORD_SCHEMA,'rt') as f:
+            schema = f.read()
+        c.executescript(schema)
+        conn.close()
+        
+    salt_missing = not os.path.exists(ts.SALT)
+    if(salt_missing):
+        salt = uuid.uuid4().hex
+        with open(ts.SALT,'w') as f:
+            f.write(salt)
+
+    #if we had to reinit the password db, add the admin.
+    if(password_db_missing):
+        register_new_user("adminadmin","crowdcrowd",1)
 
 
 
