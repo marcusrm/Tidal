@@ -70,7 +70,7 @@ class W(object):
 			return False
 		
 		if(AID==False):
-			print(str(WID)+' Login Error': No Assignment ID specified)
+			print(str(WID)+' Login Error: No Assignment ID specified')
 		
 		if(SockObj==False):
 			print(str(WID)+' login: Socket Object not specified')

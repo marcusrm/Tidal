@@ -19,6 +19,3 @@ task_amt_pending = {}
 task_amt = {}
 task_local = {}
 w = []#just a list right now, eventually it should be the entire worker obj.
-
-def num_idle_amt_hits():
-    return len(task_amt)

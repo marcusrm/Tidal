@@ -35,31 +35,40 @@ def init_amt_task_db():
         c.executescript(schema)
         conn.close()
 
-def store_amt_task(amt_task_id,hit):
+def store_amt_task(hit):
+    print "hitid",hit.id
     conn = sqlite3.connect(ts.AMT_TASK_DB)
     c = conn.cursor()
-    c.execute('INSERT INTO amt_task (amt_task_id,hitId,assignmentId)'\
-              'values (?,?,?)',[amt_task_id,hit.id,""])
+    c.execute('INSERT INTO amt_task (hitId) values (?)',[hit.id])
     conn.commit()
     conn.close()
 
-def delete_amt_task():
-    pass
+def delete_amt_task(hitId):
+    conn = sqlite3.connect(ts.AMT_TASK_DB)
+    c = conn.cursor()
+    c.execute('DELETE FROM amt_task where hitId = ?',[hitId])
+    conn.commit()
+    conn.close()
 
-def set_amt_task_pending():
-    pass
-
-def grant_bonus(assignmentId, task_id, amount):
+def grant_bonus(assignmentId, amount):
     assignment = cl.get_assignment(assignmentId)
     if(assignment != None):
-        assignment.grant_bonus(amount,"payment for Tidal task (#"+task_id+")")
+        assignment.grant_bonus(amount,"payment for Tidal task (#"+assignmentId+")")
     
 def pay_worker(assignmentId):
     assignment = cl.get_assignment(assignmentId)
-    if(assignment != None and assignment.is_final() and
-       assignment.is_paid() is False):
+    if(assignment != None and assignment.is_paid() is False):
         assignment.approve()
+        
     
+def num_idle_amt_hits():
+    conn = sqlite3.connect(ts.AMT_TASK_DB)
+    c = conn.cursor()
+    c.execute('DELETE FROM amt_task where hitId = ?',[hitId])
+    conn.commit()
+    conn.close()
+    return len(task_amt)
+
 def post_hit(n_tasks):
 
     amt_task_id = []
@@ -77,11 +86,16 @@ def post_hit(n_tasks):
                                   )
                
         print "hit posted to URL: " , PUB_URL + "?amt_task_id=" + t
-        store_amt_task(t,hit)
+        store_amt_task(hit)
 
             
 def cancel_hits():
     cl.set_all_hits_unavailable()
+    conn = sqlite3.connect(ts.AMT_TASK_DB)
+    c = conn.cursor()
+    c.execute('DELETE FROM amt_task',[])
+    conn.commit()
+    conn.close()
     print "hits cancelled!"
 
 def report():
