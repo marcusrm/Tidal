@@ -208,13 +208,15 @@ class wrkLoginHandler(BaseHandler):
             self.render("404.html")
 
             
-        elif(not hit_exists(hitId) or not validate_worker(workerId)):
+        elif(not t_amt.hit_exists(hitId)):
             self.write("bad task id or worker ID")
             self.render("404.html")
             
         else:
             #ts.w.append(workerId)#add worker to pool
-            wm.W.login(workerId)
+            if(not wm.W.WIDexist(workerId)):
+                wm.W.add(workerId)
+            wm.W.login(workerId,assignmentId)
             
             self.set_secure_cookie("wrk",workerId,expires_days=None)
             
@@ -251,11 +253,6 @@ class secretHandler(BaseHandler):
         if self.get_argument("login",None):
             self.redirect(ts.URL_PREFIX+"/login")
 
-# class hitHandler(BaseHandler):
-#     @tornado.web.authenticated
-#     def get(self): 
-#         self.render("hit.html",url_prefix=ts.URL_PREFIX)
-        
 class missingHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):

@@ -15,6 +15,7 @@ import sys
 sys.path.append('../')
 import tidal_settings as ts
 import tidal_auth as ta
+import WorkMgr as wm
 
 TaskTree = Tree()
 TaskId = 0
@@ -30,7 +31,7 @@ class hitHandler(ta.BaseHandler):
     	print "Task ID: "+ hash_id
     	TaskId += 1;
     	TaskTree.add_node(hash_id);
-        self.render("taskpage.html", ptaskid=hash_id)
+        self.render("hit.html", ptaskid=hash_id)
 
     def post(self):
     	# Accept task and 
@@ -97,20 +98,21 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
 
 	def on_close(self):
-			print "Closing socket " + str(self.id)
+            print "Closing socket " + str(self.id)
+            wm.W.logout(self.id)
 
-def main():
-	application = tornado.web.Application(
-		[
-		    (r"/", MainHandler),
-		    (r"/websocket", WebSocketHandler),
-			],
-		static_path=os.path.join( os.path.dirname(__file__), "static"),
-		template_path=os.path.join( os.path.dirname(__file__), "templates"),
-		debug=True
-		)
-	application.listen(8888)
-	tornado.ioloop.IOLoop.instance().start()
+# def main():
+# 	application = tornado.web.Application(
+# 		[
+# 		    (r"/", MainHandler),
+# 		    (r"/websocket", WebSocketHandler),
+# 			],
+# 		static_path=os.path.join( os.path.dirname(__file__), "static"),
+# 		template_path=os.path.join( os.path.dirname(__file__), "templates"),
+# 		debug=True
+# 		)
+# 	application.listen(8888)
+# 	tornado.ioloop.IOLoop.instance().start()
 
-if __name__ == "__main__":
-	main()
+# if __name__ == "__main__":
+# 	main()
