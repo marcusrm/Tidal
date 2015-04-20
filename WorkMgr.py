@@ -1,6 +1,6 @@
-# WorkPool Manager
+## WORKER MANAGER
 
-# Methods:
+# Provided Methods:
 # W.add(WID): 		returns a True/False and requires input of Worker ID(WID) as string.
 # W.remove(WID): 	removes the WID from the pool/database. Returns True/False
 # W.login(WID): 	logs in the respective WID. Returns True/False
@@ -8,6 +8,13 @@
 # W.assign(TID,Type): Assigns the Task ID (TID) to a given Type ("leaf","branch","sap").
 # W.print(WID): 	prints all info about worker
 
+# Import Required Files
+from tidal_amt import grant_bonus,post_hit,pay_worker
+
+# Defining Global Worker Dictionary
+w={}
+
+# Defining Self Contained Class
 class W(object):
 	# Class Attributes
 	Loffline=[] 	# List of all offline workers
@@ -23,7 +30,7 @@ class W(object):
 		self.AID=False			# Assignment ID->		CURRENT AMT ASSIGNMENT ID
 		self.TID='NA'			# NA or assigned TID->	WORKER TASK STATUS
 		self.status='offline' 	# online, offline->    	WORKER STATUS
-		self.type='leaf'		# leaf, sap, branch-> 	WORKER TYPE
+		self.type=None			# leaf, sap, branch-> 	WORKER TYPE
 		self.Socket=False		# SockObj or None-> 	WORKER SOCKET OBJECT
 		self.AmountEarned=0 	# Initialize Money Earned
 
@@ -40,8 +47,10 @@ class W(object):
 		if W.check(WID) and (WID not in w.keys()):
 			w[WID]=W(WID)			# Add to pool
 			W.Loffline.append(WID)
+			print('WrkMgr: WID-'+str(WID)+' Add: Success')
 			return True
 		else:
+			print('WrkMgr: WID-'+str(WID)+' Add Error: Invalid WID')
 			return False
 
 	# Remove Worker
@@ -54,27 +63,28 @@ class W(object):
 			W.Loffline.remove(WID)
 			if WID in w:
 				w.pop(WID,None)		# Remove from database
+				print('WrkMgr: WID-'+str(WID)+' Remove: Success')
 				return True
 			else: 
+				print('WrkMgr: WID-'+str(WID)+' Remove Error: WID doesn\' exist')
 				return False
 		else:
+			print('WrkMgr: WID-'+str(WID)+' Remove Error: Invalid WID')
 			return False
 	
 	# Login Worker
 	@staticmethod
-	def login(WID,AID,TYPE='leaf',SockObj=False):
+	def login(WID,AID=False,TYPE='leaf',SockObj=False):
 		global w
 		WID=str(WID)
 		if not(W.check(WID) & W.check(TYPE)):
-			print(str(WID)+': Invalid Arguments')
+			print('WrkMgr: WID-'+str(WID)+' Login Error: Invalid Arguments')
 			return False
 		
 		if(AID==False):
-			print(str(WID)+' Login Error: No Assignment ID specified')
-		
-		if(SockObj==False):
-			print(str(WID)+' login: Socket Object not specified')
-			
+			print('WrkMgr: WID-'+str(WID)+' Login Error: No Assignment ID specified')
+			return False
+
 		try:
 			if (WID in W.Loffline) and w[WID].status=='offline':
 				# Update Class lists for idle and online workers
@@ -102,13 +112,13 @@ class W(object):
 				else:
 					return False
 				
-				print(str(w[WID].WID)+' logged in as: '+str(TYPE))
+				print('WrkMgr: WID-'+str(WID)+' Login Success')
 				return True
 			else:
-				print('Login of Worker '+ str(WID) + 'Failed')
+				print('WrkMgr: WID-'+	str(WID)+' Login Error: Worker Doesn\' Exist')
 				return False
 		except:
-			print('Login Error')
+			print('WrkMgr: WID-'+str(WID)+' Login Error: Unknown Exception')
 			return False
 
 	# Logout Worker
@@ -116,17 +126,18 @@ class W(object):
 	def logout(WID):
 		global w
 		WID=str(WID)
-		if W.check(WID):
+		try:
+			#### PAY THE WORKER- RJ API HERE ####
+			#### IF PAY DONE, reset amount earned #####
 			w[WID].status='offline'
 			w[WID].Socket=False
 			W.Lremove(WID)
-			#### PAY THE WORKER- RJ API HERE ####
-			#### IF PAY DONE, reset amount earned #####
-			#### w[WID].AmountEarned=0
+			w[WID].AmountEarned=0
+			print('WrkMgr: WID-'+str(WID)+' Logout: Success. AMT Paid: '+str(w[WID].AmountEarned))
 			return True
-		else:
-			return False
-		
+		except:
+			print('WrkMgr: WID-'+str(WID)+' Logout Error: AMT Not Paid. Not Logged Out')
+			
 	# Assign Task to Worker
 	@staticmethod
 	def assign(TYPE,TID):
@@ -230,6 +241,36 @@ class W(object):
 		global w
 		return w[WID].Socket
 	
+	# To Set Worker Type='leaf','branch','sap'
+	@staticmethod
+	def set_type(WID,TYPE='leaf'):
+		global w
+		try:
+			w[WID].type=TYPE
+			print('WrkMgr: WID-'+str(WID)+' set_type: Success')
+			return True
+		except:
+			print('WrkMgr: WID-'+str(WID)+' set_type Error: Worker Doesn\'t Exist')
+			return False
+	
+	# Returns Worker Type
+	@staticmethod
+	def get_type(WID):
+		global w
+		try:
+			return w[WID].type
+		except:
+			print('WrkMgr: WID-'+str(WID)+' get_type Error: Worker Doesn\'t Exist')
+			return False
+	
+	# Check if Worker Exists
+	@staticmethod
+	def WIDexist(WID):
+		if WID in w:
+			return True
+		else:
+			return False
+			
 	# Check WID for special characters
 	@staticmethod
 	def check(WID):
@@ -252,11 +293,5 @@ class W(object):
 				W.Lleaf.remove(WID)
 			if WID not in W.Loffline:
 				W.Loffline.append(WID);
-
+			w[WID].type=None
 ##########################################################################
-# Initializing the Worker Dictionary
-w={}
-'''
-WID='1'
-W.add(WID)	
-W.login(WID)'''
