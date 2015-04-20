@@ -25,28 +25,49 @@ hit_type = cl.create_hit_type(title = "Join the rising tide!",
                               time_limit = TIME_LIMIT,
                               keywords = KEYWORDS, 
                               autopay_delay = AUTOPAY_DELAY)
-def init_amt_task_db():   
-    db_missing = not os.path.exists(ts.AMT_TASK_DB)
+def init_amt_hit_db():   
+    db_missing = not os.path.exists(ts.AMT_HIT_DB)
     if(db_missing):
-        conn = sqlite3.connect(ts.AMT_TASK_DB)
+        conn = sqlite3.connect(ts.AMT_HIT_DB)
         c = conn.cursor()
-        with open(ts.AMT_TASK_SCHEMA,'rt') as f:
+        with open(ts.AMT_HIT_SCHEMA,'rt') as f:
             schema = f.read()
         c.executescript(schema)
         conn.close()
 
-def store_amt_task(hit):
-    print "hitid",hit.id
-    conn = sqlite3.connect(ts.AMT_TASK_DB)
+def hit_exists(hitId):
+    conn = sqlite3.connect(ts.AMT_HIT_DB)
     c = conn.cursor()
-    c.execute('INSERT INTO amt_task (hitId) values (?)',[hit.id])
+    c.execute('SELECT * FROM amt_hit where hitId = ?',
+              [hitId])
+    query_result = c.fetchone()
+    conn.close()
+    if(query_result is None):
+        return False
+    else:
+        return True
+    
+def get_hit(hitId):
+    if(hit_exists):
+        return cl.get_hit(hitId)
+    else:
+        return None
+    
+def get_assignment(assignmentId):
+    return cl.get_assignment(assignmentId)
+        
+def store_amt_hit(hit):
+    print "hitid",hit.id
+    conn = sqlite3.connect(ts.AMT_HIT_DB)
+    c = conn.cursor()
+    c.execute('INSERT INTO amt_hit (hitId) values (?)',[hit.id])
     conn.commit()
     conn.close()
 
-def delete_amt_task(hitId):
-    conn = sqlite3.connect(ts.AMT_TASK_DB)
+def delete_amt_hit(hitId):
+    conn = sqlite3.connect(ts.AMT_HIT_DB)
     c = conn.cursor()
-    c.execute('DELETE FROM amt_task where hitId = ?',[hitId])
+    c.execute('DELETE FROM amt_hit where hitId = ?',[hitId])
     conn.commit()
     conn.close()
 
@@ -62,38 +83,41 @@ def pay_worker(assignmentId):
         
     
 def num_idle_amt_hits():
-    conn = sqlite3.connect(ts.AMT_TASK_DB)
+    conn = sqlite3.connect(ts.AMT_HIT_DB)
     c = conn.cursor()
-    c.execute('DELETE FROM amt_task where hitId = ?',[hitId])
+    c.execute('SELECT COUNT(*) from amt_hit',[])
+    count = c.fetchone()[0]
     conn.commit()
     conn.close()
-    return len(task_amt)
+    return count
 
 def post_hit(n_tasks):
-
-    amt_task_id = []
-    hit = []
-    for t in range(0,n_tasks):
-        amt_task_id.append((uuid.uuid4().hex)[0:6])
-        
     # Create a HIT type, with the title and description for this group of HITs.
     # Post a HIT.
-    for t in amt_task_id:
-        hit = hit_type.create_hit(url = PUB_URL + "?amt_task_id=" + t,
+    for i in range(0,n_tasks):
+        hit = hit_type.create_hit(url = PUB_URL,
                                        height = 500,
                                        max_assignments = MAX_ASSIGNMENTS,
                                        lifetime = LIFETIME,
                                   )
-               
-        print "hit posted to URL: " , PUB_URL + "?amt_task_id=" + t
-        store_amt_task(hit)
+
+        print "hit posted to URL: " , PUB_URL 
+        store_amt_hit(hit)
+        # #some test code:
+        # print "num idle",num_idle_amt_hits()
+        # print "exists (true): ",hit_exists(hit.id)
+        # print "exists (false): ",hit_exists("@#RWEF")
+        # delete_amt_hit(hit.id)
+        # print "exists (false): ",hit_exists("@#RWEF")
+        
+    
 
             
 def cancel_hits():
     cl.set_all_hits_unavailable()
-    conn = sqlite3.connect(ts.AMT_TASK_DB)
+    conn = sqlite3.connect(ts.AMT_HIT_DB)
     c = conn.cursor()
-    c.execute('DELETE FROM amt_task',[])
+    c.execute('DELETE FROM amt_hit',[])
     conn.commit()
     conn.close()
     print "hits cancelled!"

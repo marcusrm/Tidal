@@ -192,8 +192,8 @@ class devLoginHandler(BaseHandler):
 class wrkLoginHandler(BaseHandler):
     def get(self):
         workerId = self.get_argument("workerId",None)
-        amt_task_id = self.get_argument("amt_task_id",None)
         assignmentId = self.get_argument("assignmentId",None)
+        hitId = self.get_argument("hitId",None)
 
         # if(self.request.remote_ip is not AMT_IP):
         #     self.write("not an official request from AMT")
@@ -203,29 +203,22 @@ class wrkLoginHandler(BaseHandler):
                 assignmentId == "ASSIGNMENT_ID_NOT_AVAILABLE"):
                 self.render("hit_preview.html")
                 
-        elif(amt_task_id is None or workerId is None ):
-            self.write("Missing worker or task ID")
+        elif(hitId is None or workerId is None ):
+            self.write("Missing worker or hit ID")
             self.render("404.html")
 
-        elif(not amt_task_id in ts.task_amt or not validate_worker(workerId)):
+            
+        elif(not hit_exists(hitId) or not validate_worker(workerId)):
             self.write("bad task id or worker ID")
             self.render("404.html")
             
         else:
-            ts.task_amt_pending.update(
-                {amt_task_id : ts.task_amt[amt_task_id]})#move task to pending
-            del ts.task_amt[amt_task_id] #remove this task_id
             #ts.w.append(workerId)#add worker to pool
-            #wm.W.login(workerId)
+            wm.W.login(workerId)
             
             self.set_secure_cookie("wrk",workerId,expires_days=None)
             
-            # #post new hits if hits < min. add to list 
-            # if(len(ts.task_amt) < ts.task_amt_desired):
-            #     new_hits = t_amt.post_hit(ts.task_amt_desired - len(ts.task_amt))
-            #     ts.task_amt.update(new_hits)
-                
-            self.redirect(ts.URL_PREFIX+"/hit"+"?workerId="+workerId+"&amt_task_id="+amt_task_id)
+            self.redirect(ts.URL_PREFIX+"/hit"+"?workerId="+workerId+"&hitId="+hitId)
             #you can add more or less arguments here. You probably don't
             #need anything besides the worker id and the amt_task_id,
             #which you can use to look up info on that amt HIT. I think it's
