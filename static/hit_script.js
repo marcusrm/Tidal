@@ -8,47 +8,48 @@
 //     return true;
 // }
 
-function opensocket(workid)
+// function opensocket(workid)
+// {
+//     console.log("Entered opensocket");
+
+
+
+var ws_url = "ws://localhost:8888/websocket?Id="+workid;
+ws = new WebSocket(ws_url);
+console.log("Websocket created = "+ws_url);
+
+ws.onmessage = function(event)
 {
-	console.log("Entered opensocket");
-	var ws_url = "ws://localhost:8888/websocket?Id="+workid;
-	ws = new WebSocket(ws_url);
-    console.log("Websocket created = "+ws_url);
-
-    ws.onmessage = function(evt)
-    {
-    	data = evt.data;
-    	console.log("message event: "+ data)
-        if(data.indexOf("GenPage") >= 0)
-        {
-           console.log("generateTask msg received");
-            document.getElementById('TodoTask').style.display = 'block';
-            document.getElementById('Welcome').style.display = 'none';
-        }
-         if(data.indexOf("WakeUp") >= 0)
-         {
-            document.getElementById('TodoTask').style.display = 'block';
-            document.getElementById('Welcome').style.display = 'none';
-
-         }
+    msg = JSON.parse(event.data)
+    if(msg.mode == "idle"){
+	alert("DOFJSIFEJWE idle");
     }
-    ws.onopen = function(evt)
-    {
-        console.log("Open socket");
+    if(msg.mode == "ready"){
+	alert("DOFJSIFEJWE ready");
     }
-
-    ws.onclose = function(evt)
-    {
-        console.log("Closing socket");   
+    
+    if(msg.mode == "select"){
+	alert("DOFJSIFEJWE select");
     }
-    ws.onerror = function(evt)
-    {
-        console.log("Error = " + evt.data);
-    }
-    document.getElementById('TodoTask').style.display = 'none';
-    document.getElementById('Welcome').style.display = 'block';
-    return;
 }
+ws.onopen = function(evt)
+{
+    msg = JSON.parse(event.data);
+    alert(msg.mode);
+    ws.send(JSON.stringify(msg));
+}
+
+ws.onclose = function(evt)
+{ 
+}
+ws.onerror = function(evt)
+{
+    console.log("Error = " + evt.data);
+}
+document.getElementById('TodoTask').style.display = 'none';
+document.getElementById('Welcome').style.display = 'block';
+return;
+//}
 
 function FormProcessing() 
 {

@@ -30,7 +30,7 @@ def init_app():
     #should check AMT for already posted hits, but for now
     #let's just make some new ones upon startup.
     t_amt.cancel_hits()
-    t_amt.post_hit(1)
+    t_amt.post_hit(3)
             
     return Application([url(ts.URL_PREFIX+ r"/rlogin", ta.reqLoginHandler),
                         url(ts.URL_PREFIX+ r"/dlogin", ta.devLoginHandler),

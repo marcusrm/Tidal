@@ -2,11 +2,14 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title> Task Page</title>
+        <title>Task Page</title>
         <script src="http://code.jquery.com/jquery.min.js"></script>
         <script src="../static/hit_script.js" type="text/javascript" ></script>
+	
     </head>
-    		<script  type="text/javascript">
+    <script  type="text/javascript">
+      var msg = {{msg}};
+      
     		function insert_tasks_html()
     		{
     			num = document.getElementById('branchnum').value;
@@ -60,7 +63,7 @@
 	        }
 
         	</script>
-    <body onload='opensocket(1)'> <!--RJ: WorkerID should be passed here -->
+    <body > <!--RJ: WorkerID should be passed here -->
     	
     	<div id='Welcome'>
     		<h1>Welcome to TIDAL Task Force</h1>
@@ -73,7 +76,7 @@
    			    $('Taskform').hide();
    			    console.log("Hiding")
 			</script>
-    	 <input name="parent" id="parent" type="hidden" value = "{{ptaskid}}">
+    	 <input name="parent" id="parent" type="hidden" value = "1">
     	 <fieldset>
     		<div id="LorB">
               <label class="field">You choose to </label>
