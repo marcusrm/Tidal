@@ -1,15 +1,62 @@
-<!-- vim: set fileencoding=utf-8 tabstop=2 shiftwidth=2 expandtab: -->
 <!DOCTYPE html>
 <html>
     <head>
         <title>Task Page</title>
-        <script src="http://code.jquery.com/jquery.min.js"></script>
-        <script src="../static/hit_script.js" type="text/javascript" ></script>
+        <script src="https://code.jquery.com/jquery.min.js"></script>
+	<script href="{{ static_url('hit_script.js',include_host=True) }}" type="text/javascript"></script>
 	
     </head>
     <script  type="text/javascript">
-      var msg = {{msg}};
+      {% autoescape None %}
+      var msg = JSON.parse({{ msg }});
       
+      var ws_url = "ws://localhost:8888/websocket?Id="+workid;
+      ws = new WebSocket(ws_url);
+      console.log("Websocket created = "+ws_url);
+
+      ws.onmessage = function(event)
+      {
+      msg = JSON.parse(event.data)
+      if(msg.mode == "idle"){
+      alert("DOFJSIFEJWE idle");
+      }
+      if(msg.mode == "ready"){
+      alert("DOFJSIFEJWE ready");
+      }
+      
+      if(msg.mode == "select"){
+      alert("DOFJSIFEJWE select");
+      }
+      }
+      ws.onopen = function(evt)
+      {
+      msg = JSON.parse(event.data);
+      alert(msg.mode);
+      ws.send(JSON.stringify(msg));
+      }
+
+      ws.onclose = function(evt)
+      { 
+      }
+      ws.onerror = function(evt)
+      {
+      console.log("Error = " + evt.data);
+      }
+      document.getElementById('TodoTask').style.display = 'none';
+      document.getElementById('Welcome').style.display = 'block';
+      return;
+      //}
+
+      function FormProcessing() 
+      {
+      console.log("Processing form ...1. Write a function to process data 2. \
+      Ask if the brancher wants to do more tasks 3. If its a leafer , wait for supervisor's approval")
+      document.getElementById('TodoTask').innerHTML = "Thank you ! Now, wait to supervise your task ";
+      //Figure out how to send all teh task info to the server - Replacement for gethandler needed!
+      ws.send("AddTasks");
+      return 1;
+      }
+
     		function insert_tasks_html()
     		{
     			num = document.getElementById('branchnum').value;

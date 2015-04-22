@@ -4,6 +4,7 @@
 import tornado.web
 import tornado.websocket
 import tornado.ioloop
+import tornado.template
 import os.path
 from urlparse import urlparse  # py3
 import hashlib
@@ -18,6 +19,8 @@ import tidal_auth as ta
 import WorkMgr as wm
 from datetime import datetime
 import json
+from django import escapejs
+
 
 TaskTree = Tree()
 TaskId = 0
@@ -25,31 +28,31 @@ salt = 'clutter'
 workers = [ ]
 worker_dict = {}
 
-def new_msg(WID, TID, mode, task='', profile={}):
+def new_msg(WID, TID, mode, task="", profile={}):
     #header info
 
     msg = {
         'mode' : mode, #idle,ready,leaf,branch,sap,select
         'WID' : WID,
         'TID' : TID,
-        'preference' : '', #leaf/branch/sap
+        'preference' : "", #leaf/branch/sap
         'time_end' : None,
         'time_start' : str(datetime.utcnow()),
         'profile' : profile,
 
     #branch info
-        'branch_task' : '', #instructions
+        'branch_task' : "", #instructions
         'branch_data' : [], #worker results for each new branch
         'branch_data_type' : [], #is each result a leaf or a branch
 
     #leaf info
-        'leaf_task' : '', #instructions 
-        'leaf_data' : '', #worker results
+        'leaf_task' : "", #instructions 
+        'leaf_data' : "", #worker results
 
     #sap info
         'sap_task' : [], #instructions (solutions from each TID)
         'sap_task_ids' : [], #matching TIDs for the instructions
-        'sap_data' : '', #worker results 
+        'sap_data' : "", #worker results 
         'sap_rating' : [], #rates 
         'sap_rejection' : [] #returns unsatisfactory taskids
     }
@@ -61,7 +64,6 @@ def new_msg(WID, TID, mode, task='', profile={}):
     #     msg.sap.task = task #instructions
 
     return msg
-
 
 class hitHandler(ta.BaseHandler):
     @tornado.web.authenticated
@@ -83,7 +85,9 @@ class hitHandler(ta.BaseHandler):
             return
             
         msg=new_msg(WID=workerId,TID="",mode="select")
-        self.render("hit.html", msg=json.dumps(msg, sort_keys=True, indent=4, separators=(',',':')) )
+        #msg=escapejs( json.dumps(msg, separators=(',',':')) )
+        #msg=json.dumps(json.dumps(msg))
+        self.render("hit.html", msg=msg)
        # self.render("hit.html", msg=tornado.escape.json_encode(msg) )
 
     def post(self):
