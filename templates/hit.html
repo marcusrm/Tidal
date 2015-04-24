@@ -3,141 +3,172 @@
     <head>
         <title>Task Page</title>
         <script src="https://code.jquery.com/jquery.min.js"></script>
-	<script href="{{ static_url('hit_script.js',include_host=True) }}" type="text/javascript"></script>
-	
-    </head>
-    <script  type="text/javascript">
-      {% autoescape None %}
-      var msg = JSON.parse({{ msg }});
-      
-      var ws_url = "ws://localhost:8888/websocket?Id="+workid;
-      ws = new WebSocket(ws_url);
-      console.log("Websocket created = "+ws_url);
+        <!-- <script src="/static/hit_script.js" type="text/javascript"></script> -->
+        
+        <script  type="text/javascript">
 
-      ws.onmessage = function(event)
-      {
-      msg = JSON.parse(event.data)
-      if(msg.mode == "idle"){
-      alert("DOFJSIFEJWE idle");
-      }
-      if(msg.mode == "ready"){
-      alert("DOFJSIFEJWE ready");
-      }
-      
-      if(msg.mode == "select"){
-      alert("DOFJSIFEJWE select");
-      }
-      }
-      ws.onopen = function(evt)
-      {
-      msg = JSON.parse(event.data);
-      alert(msg.mode);
-      ws.send(JSON.stringify(msg));
-      }
+         function new_msg(){
 
-      ws.onclose = function(evt)
-      { 
-      }
-      ws.onerror = function(evt)
-      {
-      console.log("Error = " + evt.data);
-      }
-      document.getElementById('TodoTask').style.display = 'none';
-      document.getElementById('Welcome').style.display = 'block';
-      return;
-      //}
+             var msg;
+             msg = {
+                 mode : "testing123",
+                 WID : "",
+                 TID : "",
+                 preference : "",
+                 time_end : "",
+                 time_start : "",
+                 profile : {},
 
-      function FormProcessing() 
-      {
-      console.log("Processing form ...1. Write a function to process data 2. \
+                 branch_task : "",
+                 branch_data : [], 
+                 branch_data_type : [], 
+
+                 leaf_task : "",
+                 leaf_data : "",
+
+                 sap_task : [],
+                 sap_task_ids : [],
+                 sap_data : "",
+                 sap_rating : [],
+                 sap_rejection : [] 
+             };
+             
+             return msg;
+         }
+
+         var ws;
+         
+         $(document).ready(function(){
+             var ws_url = "ws://localhost:8008/08/websocket?workerId="+"{{workerId}}";
+             ws = new WebSocket(ws_url);
+             console.log("Websocket created = "+ws_url);
+             
+             document.getElementById('TodoTask').style.display = 'none';
+             document.getElementById('Welcome').style.display = 'block';
+
+             ws.onmessage = function(event)
+             {
+                 msg = JSON.parse(event.data);
+                 if(msg.mode == "idle"){
+                     alert("DOFJSIFEJWE idle");
+                 }
+                 if(msg.mode == "ready"){
+                     alert("DOFJSIFEJWE ready");
+                 }
+                 
+                 if(msg.mode == "select"){
+                     alert("DOFJSIFEJWE select");
+                 }
+             }
+             ws.onopen = function(evt)
+             {
+                 msg = new_msg();
+                 ws.send(JSON.stringify(msg));
+             }
+
+             ws.onclose = function(evt)
+             { 
+             }
+             ws.onerror = function(evt)
+             {
+                 console.log("Error = " + evt.data);
+             }
+
+         });
+         
+         function FormProcessing() 
+         {
+             console.log("Processing form ...1. Write a function to process data 2. \
       Ask if the brancher wants to do more tasks 3. If its a leafer , wait for supervisor's approval")
-      document.getElementById('TodoTask').innerHTML = "Thank you ! Now, wait to supervise your task ";
-      //Figure out how to send all teh task info to the server - Replacement for gethandler needed!
-      ws.send("AddTasks");
-      return 1;
-      }
+                 document.getElementById('TodoTask').innerHTML = "Thank you ! Now, wait to supervise your task ";
+             //Figure out how to send all teh task info to the server - Replacement for gethandler needed!
+             ws.send("AddTasks");
+             return 1;
+         }
 
-    		function insert_tasks_html()
-    		{
-    			num = document.getElementById('branchnum').value;
-    			document.getElementById('BranchForm').innerHTML ="";
-    			for(i=0; i<num;i++)
-				{
-					html = 
-					"<div id='taskarea"+i+"' style='clear:both;'> \
-					<label><b>SubTask Instructions</b> </label>\
-					<textarea name='Task"+i+"' id='Task'"+i+"class='box' type='text' placeholder='Leaf Task Space' maxlength='500'\
-					 style='width:350px; height:150px; float:left' required> </textarea>\
-					<label class='field'><br>According to you, should this task be <br></label>\
-              		<input name='Task"+i+"Pred' type='radio'  value='branchnext'>Branched into subtasks by further by another worker<br>\
-              		<input name='Task"+i+"Pred' type='radio'  value='leafnext'> Completed by a single worker\
-					</br >\
-					</div>"
-					document.getElementById('BranchForm').innerHTML += html;
-				}
-    		}
-    		function taskchoice_html()
-	    	{
-				if(document.Taskform.choice[1].checked) 
-	    		{ 
-	    			var html = "<label class='red'>Task Space</label> \
-	    			<textarea name='leaftask' id='leaftask' type='text' placeholder='Space for Task' maxlength='500' style='width:350px; height:150px;' required></textarea>"
-	    			document.getElementById("LeafForm").innerHTML =html;
-	    		 	document.getElementById('BranchForm').innerHTML ="";
-	    		 	document.getElementById('BranchSelect').innerHTML ="";
-	    			document.getElementById("SubmitButton").value ="Submit Task";
+         function insert_tasks_html()
+         {
+             num = document.getElementById('branchnum').value;
+             document.getElementById('BranchForm').innerHTML ="";
+             for(i=0; i<num;i++)
+	     {
+		 html = 
+		 "<div id='taskarea"+i+"' style='clear:both;'> \
+                                          <label><b>SubTask Instructions</b> </label>\
+                                          <textarea name='Task"+i+"' id='Task'"+i+"class='box' type='text' placeholder='Leaf Task Space' maxlength='500'\
+                                                    style='width:350px; height:150px; float:left' required> </textarea>\
+                                          <label class='field'><br>According to you, should this task be <br></label>\
+                                          <input name='Task"+i+"Pred' type='radio'  value='branchnext'>Branched into subtasks by further by another worker<br>\
+                                          <input name='Task"+i+"Pred' type='radio'  value='leafnext'> Completed by a single worker\
+</br >\
+      </div>"
+                 document.getElementById('BranchForm').innerHTML += html;
+             }
+         }
+         function taskchoice_html()
+         {
+             if(document.Taskform.choice[1].checked) 
+             { 
+                 var html = "<label class='red'>Task Space</label> \
+      <textarea name='leaftask' id='leaftask' type='text' placeholder='Space for Task' maxlength='500' style='width:350px; height:150px;' required></textarea>"
+                 document.getElementById("LeafForm").innerHTML =html;
+                 document.getElementById('BranchForm').innerHTML ="";
+                 document.getElementById('BranchSelect').innerHTML ="";
+                 document.getElementById("SubmitButton").value ="Submit Task";
 
-	    		}
-	    		else
-	    		{
-	    			var  html = "<label>Number of Branches</label>\
-	    			<select id='branchnum' onchange='insert_tasks_html()'>\
-						<option value='2'>2</option>\
-						<option value='3'>3</option>\
-						<option value='4'>4</option>\
-						<option value='5'>5</option>\
-					</select><br>";
-	    			document.getElementById('BranchSelect').innerHTML = html;
-	    			insert_tasks_html();
-	          		document.getElementById("LeafForm").innerHTML ="";
-	          		document.getElementById("SubmitButton").value ="Post Branches as HITs";
-	          	}
-	        }
+             }
+             else
+             {
+                 var  html = "<label>Number of Branches</label>\
+      <select id='branchnum' onchange='insert_tasks_html()'>\
+        <option value='2'>2</option>\
+        <option value='3'>3</option>\
+        <option value='4'>4</option>\
+        <option value='5'>5</option>\
+      </select><br>";
+                 document.getElementById('BranchSelect').innerHTML = html;
+                 insert_tasks_html();
+                 document.getElementById("LeafForm").innerHTML ="";
+                 document.getElementById("SubmitButton").value ="Post Branches as HITs";
+             }
+         }
 
-	        function store_tasks()
-	        {
-	        	form = document.getElementById("LeafForm")
-	        }
+         function store_tasks()
+         {
+             form = document.getElementById("LeafForm")
+         }
 
-        	</script>
+        </script>
+        
+    </head>
     <body > <!--RJ: WorkerID should be passed here -->
-    	
-    	<div id='Welcome'>
-    		<h1>Welcome to TIDAL Task Force</h1>
-    		<h2> Please wait while we pick a task for you </h2>
-    		<h3> In the meanwhile, let me tell more about TIDAL <h3>
-    	</div>
-    	<div id="TodoTask" >
-    	<form name="Taskform" method="post" onsubmit="FormProcessing()" action="javascript:void(0);">
-    		    		<script type="text/javascript">
-   			    $('Taskform').hide();
-   			    console.log("Hiding")
-			</script>
-    	 <input name="parent" id="parent" type="hidden" value = "1">
-    	 <fieldset>
-    		<div id="LorB">
-              <label class="field">You choose to </label>
-              <input name="choice" type="radio"  value="branch" onclick="taskchoice_html()"> Branch This Task Further 
-              <input name="choice" type="radio"  value="leaf" onclick="taskchoice_html()"> Accept It <br>    		
-    		</div>
-    		<div id="BranchSelect"></div>
-    		<div id="LeafForm"></div>
-    		<div id="BranchForm"></div>
-    		<input type="submit" style='clear:both;float:left' value="Post Branches as HITs" id="SubmitButton"> </br>
-    		<!--<input counterforcash>-->
-    	</fieldset>
-    	</form>
-    	</div>
+        
+        <div id='Welcome'>
+            <h1>Welcome to TIDAL Task Force</h1>
+            <h2> Please wait while we pick a task for you </h2>
+            <h3> In the meanwhile, let me tell more about TIDAL <h3>
+        </div>
+        <div id="TodoTask" >
+            <form name="Taskform" method="post" onsubmit="FormProcessing()" action="javascript:void(0);">
+	        <script type="text/javascript">
+	         $('Taskform').hide();
+	         console.log("Hiding")
+	        </script>
+	        <input name="parent" id="parent" type="hidden" value = "1">
+	        <fieldset>
+	            <div id="LorB">
+	                <label class="field">You choose to </label>
+	                <input name="choice" type="radio"  value="branch" onclick="taskchoice_html()"> Branch This Task Further 
+	                <input name="choice" type="radio"  value="leaf" onclick="taskchoice_html()"> Accept It <br>    		
+	            </div>
+	            <div id="BranchSelect"></div>
+	            <div id="LeafForm"></div>
+	            <div id="BranchForm"></div>
+	            <input type="submit" style='clear:both;float:left' value="Post Branches as HITs" id="SubmitButton"> </br>
+	            <!--<input counterforcash>-->
+	        </fieldset>
+            </form>
+        </div>
 
 
 

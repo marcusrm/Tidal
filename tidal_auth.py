@@ -202,15 +202,14 @@ class wrkLoginHandler(BaseHandler):
         if( assignmentId is None or
                 assignmentId == "ASSIGNMENT_ID_NOT_AVAILABLE"):
                 self.render("hit_preview.html")
-                
+        
         elif(hitId is None or workerId is None ):
             self.write("Missing worker or hit ID")
             self.render("404.html")
-
             
-        elif(not t_amt.hit_exists(hitId)):
-            self.write("bad task id or worker ID")
-            self.render("404.html")
+        # elif(not t_amt.hit_exists(hitId)):
+        #     self.write("bad task id or worker ID")
+        #     self.render("404.html")
             
         else:
             #ts.w.append(workerId)#add worker to pool

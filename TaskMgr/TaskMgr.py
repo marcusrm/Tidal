@@ -19,7 +19,6 @@ import tidal_auth as ta
 import WorkMgr as wm
 from datetime import datetime
 import json
-from django import escapejs
 
 
 TaskTree = Tree()
@@ -66,7 +65,7 @@ def new_msg(WID, TID, mode, task="", profile={}):
     return msg
 
 class hitHandler(ta.BaseHandler):
-    @tornado.web.authenticated
+    #@tornado.web.authenticated
     def get(self):
         global TaskId
         print "\n****Get method " + str(TaskId);
@@ -87,7 +86,7 @@ class hitHandler(ta.BaseHandler):
         msg=new_msg(WID=workerId,TID="",mode="select")
         #msg=escapejs( json.dumps(msg, separators=(',',':')) )
         #msg=json.dumps(json.dumps(msg))
-        self.render("hit.html", msg=msg)
+        self.render("hit.html",workerId=workerId)
        # self.render("hit.html", msg=tornado.escape.json_encode(msg) )
 
     def post(self):
@@ -118,9 +117,11 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         print "Host : %s and origin = %s " %(host, origin)
         return True
 
-    def on_message(self,jmsg):
-        msg = json.loads(jmsg)
-        print "Socket msg is " + msg['mode'];
+    def on_message(self,evt):
+        msg = json.loads(evt)
+        print "Socket msg is " + msg['mode']
+        blank = new_msg("widdddd","tiiiiid","idle")
+        self.write_message(tornado.escape.json_encode(blank))
             
         # NJ: msg must include all task info;Add it to DB 
         if(msg['mode'] == "AddTasks"):
@@ -142,31 +143,38 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
                         
 
-    def open(self,jmsg): # args contains the argument of the forms
-
-        msg = json.loads(jmsg)
-        wm.W.set_socket(msg['WID'],self)
+    def open(self): # args contains the argument of the forms
         
-        self.id = WebSocketHandler.count # RJ: You have to replace thsi with worker ID here.
-        id =  str(self.id)
-        WebSocketHandler.count += 1
-        print "Opened socket with id "+ str(self.id)
-        self.write_message("Opened task")
-        self.stream.set_nodelay(True)
-        # Store current context information using the socket object
-        workers.append(self)
-        worker_dict[id] = {}
-        worker_dict[id]['Ws']= self 
-        worker_dict[id]['Task']= ''
-        worker_dict[id]['Status'] = 'idle'
-        if (WebSocketHandler.count == 1):
-            self.write_message("GenPage")
-            return True
+        workerId = self.get_argument("workerId",None)
+        if(workerId is None): #or if worker is not logged in
+            print "NO WORKER LOGGED IN"
+            self.close()
+        else:
+            wm.W.set_socket(workerId,self)
+
+        print "HI PEOPLE, I'M A WEBSOCKETTTTTTT"
+        
+        # self.id = WebSocketHandler.count # RJ: You have to replace thsi with worker ID here.
+        # id =  str(self.id)
+        # WebSocketHandler.count += 1
+        # print "Opened socket with id "+ str(self.id)
+        # self.write_message("Opened task")
+        # self.stream.set_nodelay(True)
+        # # Store current context information using the socket object
+        # workers.append(self)
+        # worker_dict[id] = {}
+        # worker_dict[id]['Ws']= self 
+        # worker_dict[id]['Task']= ''
+        # worker_dict[id]['Status'] = 'idle'
+        # if (WebSocketHandler.count == 1):
+        #     self.write_message("GenPage")
+        #     return True
         
 
     def on_close(self):
-        print "Closing socket " + str(self.id)
-        wm.W.logout(self.id)
+        pass
+        #print "Closing socket " + str(self.id)
+        #wm.W.logout(self.id)
 
 # def main():
 # 	application = tornado.web.Application(
