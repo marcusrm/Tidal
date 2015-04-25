@@ -1,16 +1,32 @@
+#"W." prefix added before all below method name
+
 # LOGIN MODULE INTERFACE
-W.add()
-W.remove()
-W.login(WID,TYPE)
-W.logout(WID)
-
+#add(WID)
+#remove(WID)
+#login(WID,AID,TYPE,SockObj) # Specify WID and AID
+#logout(WID)
+#
+#
 # TASK MGR INTERFACE
-W.assign(TYPE,TID)
-W.complete(WID)
-
-W.assign returns WID if worker has been assigned else returns False
-W.complete returns True if Worker status has been updated
-
-TYPE: ['branch','leaf','sap']
-TID: # Task Id
-
+#assign(TYPE,TID)
+#complete(WID,TID,AmountPay)
+#pending(WID,TID,AmountPay)  # Specify amount paayable
+#
+#
+# Client Interface
+#get_socket(WID)				# returns socket object
+#set_socket(WID,sockObj)		# stores socket object
+#set_type(WID,WorkerTYPE)	# Save Worker Type
+#
+#
+# Misc Methods
+#disp(WID)		# Disp Worker Details
+#displ()			# DIsplay pool details
+#APIs()			# shows all APIs in WorkMgr Interface
+#
+#
+#
+# Definitions
+#WID: Worker ID
+#TID: Task ID
+#AID: Assignment ID

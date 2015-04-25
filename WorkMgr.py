@@ -8,22 +8,33 @@
 # W.assign(TID,Type): Assigns the Task ID (TID) to a given Type ("leaf","branch","sap").
 # W.print(WID): 	prints all info about worker
 
-# Import Required Files
-from tidal_amt import grant_bonus,post_hit,pay_worker
+DEVMODE=True
 
+# Import Required Files
+import tidal_amt as AMT #Using grant_bonus,post_hit,pay_worker
+import sqlite3
+import pickle
+
+
+if(DEVMODE):
+	import os,sys
+	os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
+	from pdb import set_trace as brk
+	
 # Defining Global Worker Dictionary
-w={}
+w={}				# Worker Dictionary of Objects
+wDBcon={}			# Worker Database Connection Object
 
 # Defining Self Contained Class
 class W(object):
 	# Class Attributes
 	Loffline=[] 	# List of all offline workers
-	Lonline=[]		# List of all online workers
-	Lidle=[]		# List of all online idle workers
-	Lleaf=[]        # List of all online leafers  
-	Lbranch=[]		# List of all online branchers
-	Lsap=[]			# List of all online sappers
- 
+	Lonline= []		# List of all online workers
+	Lidle=	 []		# List of all online idle workers
+	Lleaf=	 []     # List of all online leafers  
+	Lbranch= []		# List of all online branchers
+	Lsap=	 []		# List of all online sappers
+	
 	# Initialization
 	def __init__(self,WID):
 		self.WID=WID			# Worker ID-> 			WORKER ID
@@ -33,26 +44,27 @@ class W(object):
 		self.type=None			# leaf, sap, branch-> 	WORKER TYPE
 		self.Socket=False		# SockObj or None-> 	WORKER SOCKET OBJECT
 		self.AmountEarned=0 	# Initialize Money Earned
-
+		
 		# Profile based information
 		self.TaskPend={}		# {'TID':AmountEarned,...}
 		self.TaskHist=[]		# List of all tasks done
 		self.Pt={'branch':0,'leaf':0,'sap':0}
-			
+		
 	# Add Worker	
 	@staticmethod
 	def add(WID):
 		global w
 		WID=str(WID)
 		if W.check(WID) and (WID not in w.keys()):
-			w[WID]=W(WID)			# Add to pool
-			W.Loffline.append(WID)
+			w[WID]=W(WID)			# Create Worker Instance
+			W.Loffline.append(WID)	# Add worker to offline list
+			W.DbUpdate(WID)			# Adding Entry To Database
 			print('WrkMgr: WID-'+str(WID)+' Add: Success')
 			return True
 		else:
-			print('WrkMgr: WID-'+str(WID)+' Add Error: Invalid WID')
+			print('WrkMgr: WID-'+str(WID)+' Add Error: Invalid WID or WID already exists')
 			return False
-
+		
 	# Remove Worker
 	@staticmethod
 	def remove(WID):
@@ -62,7 +74,8 @@ class W(object):
 			W.Lremove(WID)		# Removing worker from all lists
 			W.Loffline.remove(WID)
 			if WID in w:
-				w.pop(WID,None)		# Remove from database
+				W.DbDelete(WID)
+				w.pop(WID,None)		# Remove from dictionary
 				print('WrkMgr: WID-'+str(WID)+' Remove: Success')
 				return True
 			else: 
@@ -127,16 +140,17 @@ class W(object):
 		global w
 		WID=str(WID)
 		try:
-			#### PAY THE WORKER- RJ API HERE ####
-			#### IF PAY DONE, reset amount earned #####
+			AMT.pay_worker(WID)							# Paying Worker Base HIT Amount
+			# LOG WORKER OUT AMT 
+			AMT.grant_bonus(WID,w[WID].AmountEarned) 
+			w[WID].AmountEarned=0
 			w[WID].status='offline'
 			w[WID].Socket=False
 			W.Lremove(WID)
-			w[WID].AmountEarned=0
-			print('WrkMgr: WID-'+str(WID)+' Logout: Success. AMT Paid: '+str(w[WID].AmountEarned))
+			print('WrkMgr: WID-'+str(WID)+' Logout: Success. Amount Paid: '+str(w[WID].AmountEarned))
 			return True
 		except:
-			print('WrkMgr: WID-'+str(WID)+' Logout Error: AMT Not Paid. Not Logged Out')
+			print('WrkMgr: WID-'+str(WID)+' Logout Error: AMT Not Paid. Not Logged Out')			
 			
 	# Assign Task to Worker
 	@staticmethod
@@ -150,16 +164,25 @@ class W(object):
 			# Returns required idle worker of requested type
 			if TYPE=='branch':
 				WID_list=list(set(W.Lidle) & set(W.Lbranch))
+				WID_List_branch=WID_LIST
 			elif TYPE=='leaf':
 				WID_list=list(set(W.Lidle) & set(W.Lleaf))
 			elif TYPE=='sap':
 				WID_list=list(set(W.Lidle) & set(W.Lsap))
 				
-			if len(WID_list):
+			# Check if specific workers available
+			if len(WID_list)>0:		
 				WIDassign=WID_list[0]
 				W.Lidle.remove(WIDassign)
 				w[WIDassign].TID=TID
 				return WIDassign
+				
+			# If leaf task required and no leafers present, assign brancher
+			elif len(WID_list_branch)>0:	
+				WIDassign=WID_list_branch[0]
+				W.Lidle.remove(WIDassign)
+				w[WIDassign].TID=TID
+				return WIDassign			# Returning Brancher
 			else:
 				return False
 		except:
@@ -262,22 +285,101 @@ class W(object):
 		except:
 			print('WrkMgr: WID-'+str(WID)+' get_type Error: Worker Doesn\'t Exist')
 			return False
+		
+	# Initialize Database & 'w' dictionary
+	@staticmethod
+	def WMinit(WipeDB=False,Sandbox=True):
+		global w, wDBcon
+		# Connect to DB: if doesn't exist, create one
+		try:
+			# Connect to Database
+			if(Sandbox):
+				wDBcon=sqlite3.connect('wDB_sandbox.db')
+			else:
+				wDBcon=sqlite3.connect('wDB_deploy.db')
+			
+			# Setup Table and parameters of connection
+			cmd='create table if not exists WM(WID string primary key,OBJECT)' 	# WORKER TABLE
+			wDBcon.execute(cmd)
+			wDBcon.row_factory=sqlite3.Row
+			wDBcon.text_factory=str
+			wDBcon.isolation_level=None
+			
+			# Wipe Database Clean and add create new table
+			if(WipeDB): 			
+				WipeDB=raw_input("WorkMgr: Are you sure you want to wipe DB? Enter True to wipe: ")
+				if(WipeDB==True):
+					cmd='delete from WM'
+					wDBcon.execute(cmd)			
+			
+			
+			# Load Worker Data into Working Memory
+			cmd='select * from WM'
+			for row in wDBcon.execute(cmd):
+				w[row[0]]=pickle.loads(row[1])
+			W.Loffline=[]
+			# Check and add 'admin' entry into DB
+			if 'admin' not in w:
+				W.add('admin')
+			W.Lonline=[]
+			W.Loffline=w.keys()
+			
+			print('WrkMgr WMinit: Worker Manager Initialised and Database linked')
+			return True
+			
+		except:
+			print('WrkMgr WMinit Error: Worker Database could not be setup properly')
+			return False
+
+	# Update Worker Info in Database
+	@staticmethod
+	def DbUpdate(WID):
+		if WID in w:
+			# Database Stuff
+			try:
+				DBObject=pickle.dumps(w[WID],protocol=2)
+				cmd='insert or replace into WM values(?,?)'
+				cur=wDBcon.execute(cmd,(WID,DBObject))		
+			except:
+				print('WrkMgr: WID-'+str(WID)+' DbUpdate Error: Worker details not updatable')
+				return False
+		
+		# Update Class Attributes in database
+			try:
+				DBObject=pickle.dumps(w[WID],protocol=2)
+				cmd='insert or replace into WMList values(?,?)'
+				cur=wDBcon.execute(cmd,('Loffline'	,pickle.dumps(W.Loffline,protocol=2)))		
+				cur=wDBcon.execute(cmd,('Lonline'	,pickle.dumps(W.Lonline	,protocol=2)))		
+				cur=wDBcon.execute(cmd,('Lidle'		,pickle.dumps(W.Lidle	,protocol=2)))
+				cur=wDBcon.execute(cmd,('Lleaf'		,pickle.dumps(W.Lleaf	,protocol=2)))
+				cur=wDBcon.execute(cmd,('Lbranch'	,pickle.dumps(W.Lbranch	,protocol=2)))
+				cur=wDBcon.execute(cmd,('Lsap'		,pickle.dumps(W.Lsap	,protocol=2)))		
+			except:
+				print('WrkMgr: WID-'+str(WID)+' DbUpdate Error: Worker details not updatable')
+				return False
 	
-	# Check if Worker Exists
+	# Delete Entry from Database
+	@staticmethod
+	def DbDelete(WID):
+		if WID in w:
+			cmd='delete from WM where WID=?'
+			wDBcon.execute(cmd,(WID,))
+
+	# Check if Worker Exists In Database
 	@staticmethod
 	def WIDexist(WID):
 		if WID in w:
 			return True
 		else:
 			return False
-			
+
 	# Check WID for special characters
 	@staticmethod
 	def check(WID):
 		WID=str(WID)
 		return WID.isalnum()
-			
-	# Remove WID From Lists
+		
+	# Remove WID From All Lists
 	@staticmethod
 	def Lremove(WID):
 		if W.check(WID):
@@ -294,4 +396,18 @@ class W(object):
 			if WID not in W.Loffline:
 				W.Loffline.append(WID);
 			w[WID].type=None
+	
+	# List All Class Methods and Attributes
+	@staticmethod
+	def APIs():
+		a=[a for a in dir(W) if not(a.startswith('__') and a.endswith('__'))]
+		for x in a:
+			print(a)
+	
 ##########################################################################
+W.WMinit()		# Automatically adds the 'admin' to pool
+if(DEVMODE==True):
+	for i in xrange(20):
+		W.add(str(i))
+		if i%3==0:
+			W.login(str(i),'AID:'+str(i))
