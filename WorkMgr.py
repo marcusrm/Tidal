@@ -125,6 +125,7 @@ class W(object):
 				else:
 					return False
 				
+				DbUpdate(WID)
 				print('WrkMgr: WID-'+str(WID)+' Login Success')
 				return True
 			else:
@@ -147,6 +148,7 @@ class W(object):
 			w[WID].status='offline'
 			w[WID].Socket=False
 			W.Lremove(WID)
+			DbUpdate(WID)
 			print('WrkMgr: WID-'+str(WID)+' Logout: Success. Amount Paid: '+str(w[WID].AmountEarned))
 			return True
 		except:
@@ -175,6 +177,7 @@ class W(object):
 				WIDassign=WID_list[0]
 				W.Lidle.remove(WIDassign)
 				w[WIDassign].TID=TID
+				DbUpdate(WID)
 				return WIDassign
 				
 			# If leaf task required and no leafers present, assign brancher
@@ -182,6 +185,7 @@ class W(object):
 				WIDassign=WID_list_branch[0]
 				W.Lidle.remove(WIDassign)
 				w[WIDassign].TID=TID
+				DbUpdate(WID)
 				return WIDassign			# Returning Brancher
 			else:
 				return False
@@ -202,6 +206,7 @@ class W(object):
 			w[WID].AmountEarned=AmountPay+w[WID].AmountEarned # Adding to the worker's earned amount
 			if WID not in W.Lidle:
 				W.Lidle.append(WID)							  # Add to idle list
+				DbUpdate(WID)
 				return True
 		except:
 			return False
@@ -209,55 +214,20 @@ class W(object):
 	# Add Task Pending Approval to Worker
 	@staticmethod
 	def pending(WID,TID,AmountPay=0):
+		DbUpdate(WID)
 		pass
-		
-	# To display details of worker
-	@staticmethod
-	def disp(WID):
-		print('WID: '+str(w[WID].WID))
-		print('Status: '+str(w[WID].status))
-		print('TID: '+str(w[WID].TID))
-		print('Type:'+str(w[WID].type))
-		print('Task History:'+str(w[WID].TaskHist))
-		print('SocketID:'+str(w[WID].Socket))
-		print('Profile Points:')
-		print('    Branch:'+str(w[WID].Pt['branch']))
-		print('    Leaf:  '+str(w[WID].Pt['leaf']))
-		print('    Sap:   '+str(w[WID].Pt['sap'])+'\n\n')
-		
-	# To display List Content
-	@staticmethod
-	def displ():
-		print('Online List')
-		print(W.Lonline)
-		print('\n\n\n')
-		
-		print('Offline List')
-		print(W.Loffline)
-		print('\n\n\n')
-		
-		print('Idle List')
-		print(W.Lidle)
-		print('\n\n\n')
-		
-		print('Branch List')
-		print(W.Lbranch)
-		print('\n\n\n')
-		
-		print('Leaf List')
-		print(W.Lleaf)
-		print('\n\n\n')
-		
-		print('Sap List')
-		print(W.Lsap)
-		print('\n\n\n')
-		
+
 	# To store socket object to worker
 	@staticmethod
 	def set_socket(WID,SockObj):
 		global w
-		w[WID].Socket=SockObj
-		
+		try:
+			w[WID].Socket=SockObj
+			DbUpdate(WID)
+			return True
+		except:
+			return False
+			
 	# To retrieve socket object to worker
 	@staticmethod
 	def get_socket(WID):
@@ -270,6 +240,7 @@ class W(object):
 		global w
 		try:
 			w[WID].type=TYPE
+			DbUpdate(WID)
 			print('WrkMgr: WID-'+str(WID)+' set_type: Success')
 			return True
 		except:
@@ -397,6 +368,47 @@ class W(object):
 				W.Loffline.append(WID);
 			w[WID].type=None
 	
+	# To display details of worker
+	@staticmethod
+	def disp(WID):
+		print('WID: '+str(w[WID].WID))
+		print('Status: '+str(w[WID].status))
+		print('TID: '+str(w[WID].TID))
+		print('Type:'+str(w[WID].type))
+		print('Task History:'+str(w[WID].TaskHist))
+		print('SocketID:'+str(w[WID].Socket))
+		print('Profile Points:')
+		print('    Branch:'+str(w[WID].Pt['branch']))
+		print('    Leaf:  '+str(w[WID].Pt['leaf']))
+		print('    Sap:   '+str(w[WID].Pt['sap'])+'\n\n')
+		
+	# To display List Content
+	@staticmethod
+	def displ():
+		print('Online List')
+		print(W.Lonline)
+		print('\n\n\n')
+		
+		print('Offline List')
+		print(W.Loffline)
+		print('\n\n\n')
+		
+		print('Idle List')
+		print(W.Lidle)
+		print('\n\n\n')
+		
+		print('Branch List')
+		print(W.Lbranch)
+		print('\n\n\n')
+		
+		print('Leaf List')
+		print(W.Lleaf)
+		print('\n\n\n')
+		
+		print('Sap List')
+		print(W.Lsap)
+		print('\n\n\n')
+		
 	# List All Class Methods and Attributes
 	@staticmethod
 	def APIs():
