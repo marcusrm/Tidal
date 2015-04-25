@@ -25,6 +25,7 @@
 #APIs()			# shows all APIs in WorkMgr Interface
 #
 #
+#DbUpdate(WID)
 #
 # Definitions
 #WID: Worker ID

@@ -268,9 +268,9 @@ class W(object):
 		try:
 			# Connect to Database
 			if(Sandbox):
-				wDBcon=sqlite3.connect('wDB_sandbox.db')
+				wDBcon=sqlite3.connect('static/wDB_sandbox.db')
 			else:
-				wDBcon=sqlite3.connect('wDB_deploy.db')
+				wDBcon=sqlite3.connect('static/wDB_deploy.db')
 			
 			# Setup Table and parameters of connection
 			cmd='create table if not exists WM(WID text primary key,OBJECT text)' 	# WORKER TABLE
