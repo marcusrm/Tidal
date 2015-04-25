@@ -29,8 +29,8 @@ def init_app():
     
     #should check AMT for already posted hits, but for now
     #let's just make some new ones upon startup.
-    t_amt.cancel_hits()
-    t_amt.post_hit(1)
+    #t_amt.cancel_hits()
+    #t_amt.post_hit(3)
             
     return Application([url(ts.URL_PREFIX+ r"/rlogin", ta.reqLoginHandler),
                         url(ts.URL_PREFIX+ r"/dlogin", ta.devLoginHandler),
@@ -39,8 +39,8 @@ def init_app():
                         url(ts.URL_PREFIX+ r"/logout", ta.logoutHandler),
                         url(ts.URL_PREFIX+ r"/secret", ta.secretHandler),
                         url(ts.URL_PREFIX+ r"/hit", tm.hitHandler),
-                        url(r"/.*", ta.missingHandler),
-                        url(ts.URL_PREFIX+ r"/websocket", tm.WebSocketHandler)]
+                        url(ts.URL_PREFIX+ r"/websocket", tm.WebSocketHandler),
+                        url(r"/.*", ta.missingHandler)]
                        ,
                        **app_settings
                        )
