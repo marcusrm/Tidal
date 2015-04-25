@@ -55,7 +55,7 @@ class W(object):
 	def add(WID):
 		global w
 		WID=str(WID)
-		if W.check(WID) and (WID not in w.keys()):
+		if (W.check(WID) and (WID not in w.keys())):
 			w[WID]=W(WID)			# Create Worker Instance
 			W.Loffline.append(WID)	# Add worker to offline list
 			W.DbUpdate(WID)			# Adding Entry To Database
@@ -273,8 +273,8 @@ class W(object):
 				wDBcon=sqlite3.connect('wDB_deploy.db')
 			
 			# Setup Table and parameters of connection
-			cmd='create table if not exists WM(WID string primary key,OBJECT)' 	# WORKER TABLE
-			cmd1='create table if not exists WMList(Type string primary key,OBJECT)' 	# WORKER TABLE
+			cmd='create table if not exists WM(WID text primary key,OBJECT text)' 	# WORKER TABLE
+			cmd1='create table if not exists WMList(Type text primary key,OBJECT text)' 	# WORKER TABLE
 			wDBcon.execute(cmd)
 			wDBcon.execute(cmd1)
 			
@@ -293,11 +293,13 @@ class W(object):
 			# Load Worker Data into Working Memory
 			cmd='select * from WM'
 			for row in wDBcon.execute(cmd):
-				w[row[0]]=pickle.loads(row[1])
-			W.Loffline=[]
+				w[str(row[0])]=pickle.loads(row[1])
+			
 			# Check and add 'admin' entry into DB
 			if 'admin' not in w:
 				W.add('admin')
+			
+			# Make all Users Offline
 			W.Lonline=[]
 			W.Loffline=w.keys()
 			
@@ -424,8 +426,9 @@ class W(object):
 	
 ##########################################################################
 W.WMinit()		# Automatically adds the 'admin' to pool
-if(DEVMODE==True):
+'''if(DEVMODE==True):
 	for i in xrange(6):
 		W.add(str(i))
 		if i%3==0:
 			W.login(str(i),'AID:'+str(i))
+			'''
