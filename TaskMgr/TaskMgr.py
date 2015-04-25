@@ -78,16 +78,12 @@ class hitHandler(ta.BaseHandler):
         # assignmentId = self.get_argument("assignmentId",None)
         # hitId = self.get_argument("hitId",None)
         
-        if( workerId is None ):#or hitId is None or assignmentId is None ):
+        if( workerId is None ):
             self.write("some bad stuff happened on the way to hit page.")
             self.render("404.html")
             return
             
-        msg=new_msg(WID=workerId,TID="",mode="select")
-        #msg=escapejs( json.dumps(msg, separators=(',',':')) )
-        #msg=json.dumps(json.dumps(msg))
         self.render("hit.html",workerId=workerId)
-       # self.render("hit.html", msg=tornado.escape.json_encode(msg) )
 
     def post(self):
         # Accept task and 
@@ -118,9 +114,12 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         return True
 
     def on_message(self,evt):
-        msg = json.loads(evt)
-        print "Socket msg is " + msg['mode']
-        blank = new_msg("widdddd","tiiiiid","idle")
+        msg = tornado.escape.json_decode(evt)
+        print "Socket msg is " #+ msg['mode']
+        print msg
+
+        # #response:
+        blank = new_msg("chicken_selects","tiiiiid","select")
         self.write_message(tornado.escape.json_encode(blank))
             
         # NJ: msg must include all task info;Add it to DB 
@@ -146,13 +145,18 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def open(self): # args contains the argument of the forms
         
         workerId = self.get_argument("workerId",None)
-        if(workerId is None): #or if worker is not logged in
+        if(workerId is None or not wm.W.WIDexist(workerId)): 
             print "NO WORKER LOGGED IN"
             self.close()
         else:
             wm.W.set_socket(workerId,self)
 
         print "HI PEOPLE, I'M A WEBSOCKETTTTTTT"
+        
+        msg = new_msg("chicken_selects","tiiiiid","branch")
+        msg['leaf_task'] = "floop the pig leaf"
+        msg['branch_task'] = "floop the pig branch"
+        self.write_message(tornado.escape.json_encode(msg))
         
         # self.id = WebSocketHandler.count # RJ: You have to replace thsi with worker ID here.
         # id =  str(self.id)
