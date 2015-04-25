@@ -99,7 +99,11 @@ class W(object):
 			return False
 
 		try:
-			if (WID in W.Loffline) and w[WID].status=='offline':
+			if (WID in W.Loffline):
+				if(w[WID].status!='offline'): 
+					print('WrkMgr WID-'+str(WID)+' login: worker already online')
+					return False
+			
 				# Update Class lists for idle and online workers
 				W.Lonline.append(WID)
 				W.Loffline.remove(WID)
@@ -124,8 +128,7 @@ class W(object):
 					W.Lleaf.append(WID)
 				else:
 					return False
-				
-				DbUpdate(WID)
+				W.DbUpdate(WID)
 				print('WrkMgr: WID-'+str(WID)+' Login Success')
 				return True
 			else:
@@ -148,7 +151,7 @@ class W(object):
 			w[WID].status='offline'
 			w[WID].Socket=False
 			W.Lremove(WID)
-			DbUpdate(WID)
+			W.DbUpdate(WID)
 			print('WrkMgr: WID-'+str(WID)+' Logout: Success. Amount Paid: '+str(w[WID].AmountEarned))
 			return True
 		except:
@@ -177,7 +180,7 @@ class W(object):
 				WIDassign=WID_list[0]
 				W.Lidle.remove(WIDassign)
 				w[WIDassign].TID=TID
-				DbUpdate(WID)
+				W.DbUpdate(WID)
 				return WIDassign
 				
 			# If leaf task required and no leafers present, assign brancher
@@ -185,12 +188,12 @@ class W(object):
 				WIDassign=WID_list_branch[0]
 				W.Lidle.remove(WIDassign)
 				w[WIDassign].TID=TID
-				DbUpdate(WID)
+				W.DbUpdate(WID)
 				return WIDassign			# Returning Brancher
 			else:
 				return False
 		except:
-			print('Assignment Error')
+			print('WM '+str(WID)+' assign task: Assignment Error')
 			return False
 
 	# Assign Task to Worker
@@ -206,7 +209,7 @@ class W(object):
 			w[WID].AmountEarned=AmountPay+w[WID].AmountEarned # Adding to the worker's earned amount
 			if WID not in W.Lidle:
 				W.Lidle.append(WID)							  # Add to idle list
-				DbUpdate(WID)
+				W.DbUpdate(WID)
 				return True
 		except:
 			return False
@@ -214,7 +217,7 @@ class W(object):
 	# Add Task Pending Approval to Worker
 	@staticmethod
 	def pending(WID,TID,AmountPay=0):
-		DbUpdate(WID)
+		W.DbUpdate(WID)
 		pass
 
 	# To store socket object to worker
@@ -223,7 +226,7 @@ class W(object):
 		global w
 		try:
 			w[WID].Socket=SockObj
-			DbUpdate(WID)
+			W.DbUpdate(WID)
 			return True
 		except:
 			return False
@@ -240,7 +243,7 @@ class W(object):
 		global w
 		try:
 			w[WID].type=TYPE
-			DbUpdate(WID)
+			W.DbUpdate(WID)
 			print('WrkMgr: WID-'+str(WID)+' set_type: Success')
 			return True
 		except:
@@ -271,7 +274,10 @@ class W(object):
 			
 			# Setup Table and parameters of connection
 			cmd='create table if not exists WM(WID string primary key,OBJECT)' 	# WORKER TABLE
+			cmd1='create table if not exists WMList(Type string primary key,OBJECT)' 	# WORKER TABLE
 			wDBcon.execute(cmd)
+			wDBcon.execute(cmd1)
+			
 			wDBcon.row_factory=sqlite3.Row
 			wDBcon.text_factory=str
 			wDBcon.isolation_level=None
@@ -419,7 +425,7 @@ class W(object):
 ##########################################################################
 W.WMinit()		# Automatically adds the 'admin' to pool
 if(DEVMODE==True):
-	for i in xrange(20):
+	for i in xrange(6):
 		W.add(str(i))
 		if i%3==0:
 			W.login(str(i),'AID:'+str(i))
