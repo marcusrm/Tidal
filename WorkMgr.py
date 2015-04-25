@@ -288,7 +288,7 @@ class W(object):
 		
 	# Initialize Database & 'w' dictionary
 	@staticmethod
-	def WMinit(WipeDB=False,Sandbox=True):
+	def WMinit(WipeDB=False,Sandbox=DEVMODE):
 		global w, wDBcon
 		# Connect to DB: if doesn't exist, create one
 		try:
