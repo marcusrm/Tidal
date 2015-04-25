@@ -23,6 +23,7 @@
              var i;
              for (i = 0; i < x.length; i++) {
                  x[i].style.display = "none";
+                 x[i].style.disabled = true;
              }
          }
          function error(){
@@ -30,7 +31,7 @@
              byId('error').style.display = 'block';
          }
 
-         function send_pref(preference){             
+         function send_select(preference){             
              msg.mode = "select";
              msg.preference = preference;
              ws.send(JSON.stringify(msg));
@@ -39,19 +40,17 @@
          function gen_branch(){
              byId("branch_instructions").innerHTML = msg.branch_task;
          }
-         function gen_sap(){
-
-         }
          function gen_leaf(){
              byId("leaf_instructions").innerHTML = msg.leaf_task;
          }
          function send_leaf(){
+             msg.mode = "leaf";
              msg.leaf_data = byId("leaftask_text").value;
              ws.send(JSON.stringify(msg));
          }
          
-         function send_branch() 
-         {
+         function send_branch() {
+             msg.mode = "branch";
              if(document.BranchForm.choice[1].checked)
                  send_leaf();
              else{                 
@@ -70,7 +69,48 @@
                  ws.send(JSON.stringify(msg));
              }
          }
+         
+         function insert_sap_insn_html(){
+             var num = msg.sap_task.length;
+             byId('SapForm').innerHTML ="";
+             for(i=0; i<num;i++){
+		 var html = 
+		 "<div style='clear:both;'> \
+                                          <b>Original Task"+i+" Instructions:</b> <br> <label id='sap_task"+i+"'></label><br><br>\
+                                          <b>Worker Output:</b> <br> <label id='sap_work"+i+"'></label><br><br>\
+                                          <b>Reject it?:</b> <input id='sap_reject"+i+"' type='checkbox'  value='reject'> <br><br>\
+                                          <b>Rating (bad<->good):</b><input id='sap_rating"+i+"' type='range'  value='5' min='0' max='10'> \
+                                          
+      </div>"
+                 byId('SapForm').innerHTML += html;
+             }
+             byId('SapForm').innerHTML += "<br><b>Your Work:</b><br><textarea name='sap_data' id='sap_data'\
+             class='box' type='text' placeholder='Leaf Task Space' maxlength='500'\
+             style='width:350px; height:150px; float:left' required> </textarea>"
 
+         }
+         
+         function gen_sap(){
+             insert_sap_insn_html();
+             var num = msg.sap_task.length;
+             for(i=0; i<num;i++){
+                 byId("sap_task"+i).innerHTML = msg.sap_task[i];
+                 byId("sap_work"+i).innerHTML = msg.sap_work[i];
+             }
+
+         }
+
+         function send_sap(){
+             msg.mode = "sap";
+             var num = msg.sap_task.length;
+             for(i=0; i<num;i++){
+                 msg.sap_rating.push(byId("sap_rating"+i).value);
+                 msg.sap_reject.push(byId("sap_reject"+i).checked);
+                 msg.sap_data = byId("sap_data").value;
+             }
+             ws.send(JSON.stringify(msg));
+         }
+         
          $(document).ready(function(){
              var ws_url = "ws://localhost:8008/08/websocket?workerId="+"{{workerId}}";
              ws = new WebSocket(ws_url);
@@ -84,6 +124,7 @@
                  
                  hide_all();
                  byId(msg.mode).style.display = 'block';
+                 byId(msg.mode).style.display = false;
                  
                  switch(msg.mode){
                      case "idle":
@@ -111,24 +152,7 @@
 
          });
 
-         function insert_sap_insn_html(){
-             var num = byId('branchnum').value;
-             byId('BranchBranchForm').innerHTML ="";
-             for(i=0; i<num;i++){
-		 var html = 
-		 "<div id='sap_work"+i+"' style='clear:both;'> \
-                                          <label><b>SubTask Input"+i+"</b> </label>\
-                                          <label id=><br>According to you, should this task be <br></label>\
-                                          
-      </div>"
-                 byId('SapForm').innerHTML += html;
-             }
-             byId('SapForm').innerHTML += "<textarea name='sap_text' id='sap_text'\
-             class='box' type='text' placeholder='Leaf Task Space' maxlength='500'\
-             style='width:350px; height:150px; float:left' required> </textarea>"
 
-         }
-         
          function insert_tasks_html()
          {
              var num = byId('branchnum').value;
@@ -184,10 +208,16 @@
         <div class="mode" id="select">
             <h1>Welcome to TIDAL Task Force</h1>
             <h2> Please select what type of work you would like to do today. </h2>
+            
+	    <input type="button" value="Branch" onclick="send_select('branch')"> </br>
+	    <input type="button" value="Leaf" onclick="send_select('leaf')"> </br>
+	    <input type="button" value="Sap" onclick="send_select('sap')"> </br>
         </div>
         
         <div class="mode" id="idle">
-            <h2> There are currently no tasks to be done. Please wait until one becomes available and we'll notify you. In the meantime you will still be compensated at the rate of $0.01 per hour to be on hold. </h2>
+            <h2> There are currently no tasks to be done. Please wait until one becomes available \
+                and we'll notify you. In the meantime you will still be compensated at the rate of \
+                $0.01 per hour to be on hold. </h2>
         </div>
         
         <div class="mode" id="ready">
@@ -196,8 +226,6 @@
         
         <div class="mode" id="branch" >
             <form name="BranchForm" method="post" onsubmit="send_branch()" action="javascript:void(0);">
-	        <script type="text/javascript">
-	        </script>
 	        <input name="parent" id="parent" type="hidden" value = "1">
 	        <fieldset>
                     <b>Instructions:</b><br><br>
@@ -219,8 +247,6 @@
 
         <div class="mode" id="leaf" >
             <form name="LeafForm" method="post" onsubmit="send_leaf()" action="javascript:void(0);">
-	        <script type="text/javascript">
-	        </script>
 	        <input name="parent" id="parent" type="hidden" value = "1"><!-- what's this? -->
 	        <fieldset>
 	            <div id="LeafForm">
@@ -243,10 +269,6 @@
 	        <input name="parent" id="parent" type="hidden" value = "1"><!-- what's this? -->
 	        <fieldset>
 	            <div id="SapForm">
-                        <b>Instructions:</b><br><br>
-                        <label class='red' id="sap_instructions"></label><br>
-                        <textarea name='saptask_text' id='saptask_text' type='text' placeholder='Space for Task' maxlength='500' style='width:350px; height:150px;' required>
-                        </textarea>
                     </div>
 	            <input type="submit" style='clear:both;float:left' value="Submit Task" id="SubmitSap"> </br>
 	            <!--<input counterforcash>-->

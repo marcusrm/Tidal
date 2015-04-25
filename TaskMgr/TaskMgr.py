@@ -51,9 +51,10 @@ def new_msg(WID, TID, mode, task="", profile={}):
     #sap info
         'sap_task' : [], #instructions (solutions from each TID)
         'sap_task_ids' : [], #matching TIDs for the instructions
-        'sap_data' : "", #worker results 
+        'sap_work' : [], #worker results
+        'sap_data' : "", #sapper results 
         'sap_rating' : [], #rates 
-        'sap_rejection' : [] #returns unsatisfactory taskids
+        'sap_reject' : [] #returns unsatisfactory taskids
     }
     # if(mode == 'branch'):
     #     msg.branch.task = task #instructions
@@ -153,9 +154,12 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
         print "HI PEOPLE, I'M A WEBSOCKETTTTTTT"
         
-        msg = new_msg("chicken_selects","tiiiiid","branch")
+        msg = new_msg("chicken_selects","tiiiiid","sap")
         msg['leaf_task'] = "floop the pig leaf"
         msg['branch_task'] = "floop the pig branch"
+        msg['sap_task'] = ["floop the pig branch","DON'T GIVE EM THE STICK"]
+        msg['sap_work'] = ["work1","work2, baby"]
+        msg['sap_task_ids'] = ["ideeee1","id2"]
         self.write_message(tornado.escape.json_encode(msg))
         
         # self.id = WebSocketHandler.count # RJ: You have to replace thsi with worker ID here.
