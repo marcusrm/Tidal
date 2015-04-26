@@ -195,10 +195,14 @@ class wrkLoginHandler(BaseHandler):
         assignmentId = self.get_argument("assignmentId",None)
         hitId = self.get_argument("hitId",None)
 
+        if(ts.LOCAL_TESTING and workerId is None):
+            workerId = "TESTWORKERID"
+            assignmentId = "TESTASSIGNMENTID"
+            hitId = "TESTHITID"
+        
         # if(self.request.remote_ip is not AMT_IP):
         #     self.write("not an official request from AMT")
         #     self.render("404.html")
-        print assignmentId
         if( assignmentId is None or
                 assignmentId == "ASSIGNMENT_ID_NOT_AVAILABLE"):
                 self.render("hit_preview.html")
@@ -207,7 +211,7 @@ class wrkLoginHandler(BaseHandler):
             self.write("Missing worker or hit ID")
             self.render("404.html")
             
-        elif(not t_amt.hit_exists(hitId)):
+        elif(not ts.LOCAL_TESTING and not t_amt.hit_exists(hitId)):
             self.write("bad task id or worker ID")
             self.render("404.html")
             

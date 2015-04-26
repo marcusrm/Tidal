@@ -112,7 +112,12 @@
          }
          
          window.onload = function(){
-             var ws_url = "wss://crowd.ecn.purdue.edu/08/websocket?workerId="+"{{workerId}}";
+             var ws_url;
+             if("{{local_testing}}" == "True")
+                 ws_url = "ws://localhost:{{port}}{{url_prefix}}/websocket?workerId="+"{{workerId}}";
+             else
+                 ws_url = "wss://crowd.ecn.purdue.edu{{url_prefix}}/websocket?workerId="+"{{workerId}}";
+                 
              ws = new WebSocket(ws_url);
              console.log("Websocket created = "+ws_url);
 
@@ -122,9 +127,11 @@
              {
                  msg = JSON.parse(event.data);
                  
+                 console.log("message = " + event.data);
+                 
                  hide_all();
                  byId(msg.mode).style.display = 'block';
-                 byId(msg.mode).style.display = false;
+                 byId(msg.mode).style.disabled = false;
                  
                  switch(msg.mode){
                      case "idle":
