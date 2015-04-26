@@ -9,7 +9,7 @@
          
          var workerId = "{{workerId}}";
          var ws;
-         var msg ;
+         var msg;
          
          var byId = function( id ) {
              return document.getElementById( id );
@@ -22,8 +22,8 @@
              var x = document.getElementsByClassName('mode');
              var i;
              for (i = 0; i < x.length; i++) {
-                 x[i].style.display = "none";
                  x[i].style.disabled = true;
+                 x[i].style.display = "none";
              }
          }
          function error(){
@@ -81,10 +81,10 @@
                                           <b>Reject it?:</b> <input id='sap_reject"+i+"' type='checkbox'  value='reject'> <br><br>\
                                           <b>Rating (bad<->good):</b><input id='sap_rating"+i+"' type='range'  value='5' min='0' max='10'> \
                                           
-      </div>"
+      </div><br>"
                  byId('SapForm').innerHTML += html;
              }
-             byId('SapForm').innerHTML += "<br><b>Your Work:</b><br><textarea name='sap_data' id='sap_data'\
+             byId('SapForm').innerHTML += "<b>Your Work:</b><br><textarea name='sap_data' id='sap_data'\
              class='box' type='text' placeholder='Leaf Task Space' maxlength='500'\
              style='width:350px; height:150px; float:left' required> </textarea>"
 
@@ -111,8 +111,8 @@
              ws.send(JSON.stringify(msg));
          }
          
-         $(document).ready(function(){
-             var ws_url = "ws://localhost:8008/08/websocket?workerId="+"{{workerId}}";
+         window.onload = function(){
+             var ws_url = "wss://crowd.ecn.purdue.edu/08/websocket?workerId="+"{{workerId}}";
              ws = new WebSocket(ws_url);
              console.log("Websocket created = "+ws_url);
 
@@ -150,7 +150,7 @@
                  console.log("Error = " + evt.data);
              }
 
-         });
+         };
 
 
          function insert_tasks_html()
@@ -215,8 +215,8 @@
         </div>
         
         <div class="mode" id="idle">
-            <h2> There are currently no tasks to be done. Please wait until one becomes available \
-                and we'll notify you. In the meantime you will still be compensated at the rate of \
+            <h2> There are currently no tasks to be done. Please wait until one becomes available 
+                and we'll notify you. In the meantime you will still be compensated at the rate of 
                 $0.01 per hour to be on hold. </h2>
         </div>
         

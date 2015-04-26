@@ -56,17 +56,11 @@ def new_msg(WID, TID, mode, task="", profile={}):
         'sap_rating' : [], #rates 
         'sap_reject' : [] #returns unsatisfactory taskids
     }
-    # if(mode == 'branch'):
-    #     msg.branch.task = task #instructions
-    # if(mode == 'leaf'):
-    #     msg.leaf.task = task #instructions
-    # if(mode == 'sap'):
-    #     msg.sap.task = task #instructions
 
     return msg
 
 class hitHandler(ta.BaseHandler):
-    #@tornado.web.authenticated
+    @tornado.web.authenticated
     def get(self):
         global TaskId
         print "\n****Get method " + str(TaskId);
@@ -106,6 +100,42 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     count = 0;
     t2wcount = 1;
     @tornado.web.asynchronous
+    def get(self, *args, **kwargs):
+        self.open_args = args
+        self.open_kwargs = kwargs
+ 
+        # Handle WebSocket Origin naming convention differences
+        # The difference between version 8 and 13 is that in 8 the
+        # client sends a "Sec-Websocket-Origin" header and in 13 it's
+        # simply "Origin".
+        if "Origin" in self.request.headers:
+            origin = self.request.headers.get("Origin")
+        else:
+            origin = self.request.headers.get("Sec-Websocket-Origin", None)
+
+        # If there was an origin header, check to make sure it matches
+        # according to check_origin. When the origin is None, we assume it
+        # did not come from a browser and that it can be passed on.
+        if origin is not None and not self.check_origin(origin):
+            self.set_status(403)
+            log_msg = "Cross origin websockets not allowed"
+            self.finish(log_msg)
+            gen_log.debug(log_msg)
+            return 
+
+        self.stream = self.request.connection.detach()
+        self.stream.set_close_callback(self.on_connection_close)
+
+        self.ws_connection = self.get_websocket_protocol()
+        if self.ws_connection:
+            self.ws_connection.accept_connection()
+        else:
+            if not self.stream.closed():
+                self.stream.write(tornado.escape.utf8(
+                    "HTTP/1.1 426 Upgrade Required\r\n"
+                    "Sec-WebSocket-Version: 7, 8, 13\r\n\r\n"))
+                self.stream.close()
+
     def check_origin(self, origin):
         parsed_origin = urlparse(origin)
         origin = parsed_origin.netloc
@@ -141,9 +171,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             else:
                 self.write_message("Msg="+msg)
 
-                        
-
     def open(self): # args contains the argument of the forms
+        
+        print self
         
         workerId = self.get_argument("workerId",None)
         if(workerId is None or not wm.W.WIDexist(workerId)): 
