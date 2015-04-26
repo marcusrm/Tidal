@@ -22,10 +22,6 @@ import json
 
 
 TaskTree = Tree()
-TaskId = 0
-salt = 'clutter'
-workers = [ ]
-worker_dict = {}
 
 def new_msg(WID, TID, mode, task="", profile={}):
     #header info
@@ -36,7 +32,7 @@ def new_msg(WID, TID, mode, task="", profile={}):
         'TID' : TID,
         'preference' : "", #leaf/branch/sap
         'time_end' : None,
-        'time_start' : str(datetime.utcnow()),
+        'time_start' : None,
         'profile' : profile,
 
     #branch info
@@ -62,12 +58,12 @@ def new_msg(WID, TID, mode, task="", profile={}):
 class hitHandler(ta.BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        global TaskId
-        print "\n****Get method " + str(TaskId);
-        hash_id = hashlib.sha512(str(TaskId)+salt).hexdigest();
-        print "Task ID: "+ hash_id
-        TaskId += 1;
-        TaskTree.add_node(hash_id);
+        # global TaskId
+        # print "\n****Get method " + str(TaskId);
+        # hash_id = hashlib.sha512(str(TaskId)+salt).hexdigest();
+        # print "Task ID: "+ hash_id
+        # TaskId += 1;
+        # TaskTree.add_node(hash_id);
 
         workerId = self.get_argument("workerId",None)
         # assignmentId = self.get_argument("assignmentId",None)
@@ -85,37 +81,108 @@ class hitHandler(ta.BaseHandler):
         print "Task Submitted"
         TaskTree.add_node(hash_id);
 
-def doNextTask(id,ws):	
-    # NJ : 1. Check if you need more workers
-    # NJ : 2. Must pass next free task to the worker
-    worker_dict[id]['Task'] = '0' ; #get_task(); SB 
-    ws.write_message("WakeUp"); #placeholder msg - temp 
-    return True
+# def doNextTask(id,ws):	
+#     # NJ : 1. Check if you need more workers
+#     # NJ : 2. Must pass next free task to the worker
+#     worker_dict[id]['Task'] = '0' ; #get_task(); SB 
+#     ws.write_message("WakeUp"); #placeholder msg - temp 
+#     return True
 
-def send_msg(msg):
-    socket = wm.W.get_socket(msg['WID'])
-    socket.write_message(msg)
+# def send_msg_to_socket(msg):
+#     socket = wm.W.get_socket(msg['WID'])
+#     socket.write_message(msg)
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
-    count = 0;
-    t2wcount = 1;
+
+    def send_msg(self,msg):
+        self.write_message(tornado.escape.json_encode(msg))
+    
+    #NOTE! when task can't find anything it should return
+    #a blank object with a TYPE of "idle"
+    def task_to_msg(self,task):
+        msg = new_msg()
+        msg['mode'] = task.type
+        #I think hte following 3 can be absorbed into
+        #websocket class variables so they dont' have to
+        #get passed around to the worker.....
+        msg['WID'] = self.workerId
+        msg['TID'] = task.TID
+        msg['preference'] = self.preference
+        msg['time_start'] = self.time_stamp
+        msg['profile'] = None
+        if(task.type == "branch"):
+            msg['branch_task'] = task.instructions
+        if(task.type == "leaf"):
+            msg['leaf_task'] = task.instructions
+        if(task.type == "sap"):
+            msg['sap_task'] = task.instructions
+            msg['sap_task_ids'] = task.sap_task_ids
+            msg['sap_work'] = task.sap_work
+            
+        return msg
+    
+    def idle_callback(self,msg):
+        #remove worker from idle list #NJ
+        print "idle callback" #???
+        
+    def ready_callback(self,msg): #NJ help 
+        #assign pre-fetched task 
+        #send msg back
+        print "ready callback" #???
+        
+    def branch_callback(self,msg):
+        if(msg['mode'] == "branch"):
+            TaskTree.save_results(msg)
+        task = TaskTree.get_task("branch")
+        self.send_msg(self.task_to_msg(task))
+        print "branch callback" 
+        
+    def leaf_callback(self,msg):
+        if(msg['mode'] == "leaf"):
+            TaskTree.save_results(msg)
+        task = TaskTree.get_task("leaf")
+        self.send_msg(self.task_to_msg(task))     
+        print "leaf callback" 
+        
+    def sap_callback(self,msg):
+        if(msg['mode'] == "sap"):
+            TaskTree.save_results(msg)
+        task = TaskTree.get_task("sap")
+        self.send_msg(self.task_to_msg(task))
+        print "sap callback" 
+        
+    def select_callback(self,msg):
+        wm.W.set_type(self.workerId,msg['preference'])
+        self.preference = msg['preference']
+        #jump to leaf/branch/sap to grab a new task:
+        self.callback[self.preference](msg) 
+        print "select callback"
+        
+    
+    def __init__(self, application, request, **kwargs):
+        super(WebSocketHandler, self).__init__(application, request, **kwargs)
+        self.workerId = self.get_argument("workerId",None)
+        self.callback = {"select" : self.select_callback,
+                         "idle" : self.idle_callback,
+                         "ready" : self.ready_callback,
+                         "branch" : self.branch_callback,
+                         "leaf" : self.leaf_callback,
+                         "sap" : self.sap_callback,
+                     }
+        self.time_stamp = datetime.utcnow()
+        self.preference = ""
+        self.profile = None
+        
     @tornado.web.asynchronous
     def get(self, *args, **kwargs):
         self.open_args = args
         self.open_kwargs = kwargs
  
-        # Handle WebSocket Origin naming convention differences
-        # The difference between version 8 and 13 is that in 8 the
-        # client sends a "Sec-Websocket-Origin" header and in 13 it's
-        # simply "Origin".
         if "Origin" in self.request.headers:
             origin = self.request.headers.get("Origin")
         else:
             origin = self.request.headers.get("Sec-Websocket-Origin", None)
 
-        # If there was an origin header, check to make sure it matches
-        # according to check_origin. When the origin is None, we assume it
-        # did not come from a browser and that it can be passed on.
         if origin is not None and not self.check_origin(origin):
             self.set_status(403)
             log_msg = "Cross origin websockets not allowed"
@@ -146,86 +213,30 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
     def on_message(self,evt):
         msg = tornado.escape.json_decode(evt)
-        print "Socket msg is " #+ msg['mode']
-        print msg
 
-        # #response:
-        blank = new_msg("chicken_selects","tiiiiid","select")
-        self.write_message(tornado.escape.json_encode(blank))
+        #enforce correct timing & start new period. 
+        msg['time_start'] = self.time_stamp
+        msg['time_end'] = datetime.utcnow()
+        self.time_stamp = datetime.utcnow()
+        
+        if(self.callback[msg['mode']] not None):
+            self.callback[msg['mode']](msg)
             
-        # NJ: msg must include all task info;Add it to DB 
-        if(msg['mode'] == "AddTasks"):
-            #NJ: Pick a free worker from the list
-            #workerId = get_worker();
-            workerId = str(WebSocketHandler.t2wcount);
-            print" Searching for Worker with ID "+workerId
-            if workerId in worker_dict:
-                workerWS = worker_dict[workerId]['Ws'];
-                print "Worker WS selected for next task"
-                if(doNextTask(workerId,workerWS)):
-                    worker_dict[workerId]['Status'] = 'busy'
-                    print "Next task assigned to" + workerId
-                    WebSocketHandler.t2wcount+=1;
-                else:
-                    print "Failed to assign Task to worker"
-            else:
-                self.write_message("Msg="+msg)
 
     def open(self): # args contains the argument of the forms
         
-        print self
-        
-        workerId = self.get_argument("workerId",None)
-        if(workerId is None or not wm.W.WIDexist(workerId)): 
+        if(self.workerId is None or not wm.W.WIDexist(self.workerId)): 
             print "NO WORKER LOGGED IN"
             self.close()
+            return
         else:
-            wm.W.set_socket(workerId,self)
-
-        print "HI PEOPLE, I'M A WEBSOCKETTTTTTT"
+            wm.W.set_socket(self.workerId,self)
+            
+        selectmsg = new_msg(self.workerId,"","select")
+        self.send_msg(selectmsg)
         
-        msg = new_msg("chicken_selects","tiiiiid","sap")
-        msg['leaf_task'] = "floop the pig leaf"
-        msg['branch_task'] = "floop the pig branch"
-        msg['sap_task'] = ["floop the pig branch","DON'T GIVE EM THE STICK"]
-        msg['sap_work'] = ["work1","work2, baby"]
-        msg['sap_task_ids'] = ["ideeee1","id2"]
-        self.write_message(tornado.escape.json_encode(msg))
-        
-        # self.id = WebSocketHandler.count # RJ: You have to replace thsi with worker ID here.
-        # id =  str(self.id)
-        # WebSocketHandler.count += 1
-        # print "Opened socket with id "+ str(self.id)
-        # self.write_message("Opened task")
-        # self.stream.set_nodelay(True)
-        # # Store current context information using the socket object
-        # workers.append(self)
-        # worker_dict[id] = {}
-        # worker_dict[id]['Ws']= self 
-        # worker_dict[id]['Task']= ''
-        # worker_dict[id]['Status'] = 'idle'
-        # if (WebSocketHandler.count == 1):
-        #     self.write_message("GenPage")
-        #     return True
-        
+        # self.stream.set_nodelay(True) #what's this?
 
     def on_close(self):
-        pass
-        #print "Closing socket " + str(self.id)
-        #wm.W.logout(self.id)
-
-# def main():
-# 	application = tornado.web.Application(
-# 		[
-# 		    (r"/", MainHandler),
-# 		    (r"/websocket", WebSocketHandler),
-# 			],
-# 		static_path=os.path.join( os.path.dirname(__file__), "static"),
-# 		template_path=os.path.join( os.path.dirname(__file__), "templates"),
-# 		debug=True
-# 		)
-# 	application.listen(8888)
-# 	tornado.ioloop.IOLoop.instance().start()
-
-# if __name__ == "__main__":
-# 	main()
+        print "Closing socket for" + self.workerId
+        wm.W.logout(self.workerId)
