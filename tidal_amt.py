@@ -13,7 +13,6 @@ KEYWORDS = ["tidal"]
 AUTOPAY_DELAY = 3600*.5
 
 PUB_URL = "https://crowd.ecn.purdue.edu"+ts.URL_PREFIX+"/wlogin"
-#PUB_URL = "http://127.0.0.1:"+str(ts.PORT)+ts.URL_PREFIX+"/wlogin"
 
 MAX_ASSIGNMENTS = 1
 LIFETIME = 3600*10

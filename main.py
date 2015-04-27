@@ -25,12 +25,11 @@ app_settings = {
 def init_app():
 
     ta.init_password_db()
-    t_amt.init_amt_hit_db()
-    
-    #should check AMT for already posted hits, but for now
-    #let's just make some new ones upon startup.
-    #t_amt.cancel_hits()
-    #t_amt.post_hit(3)
+
+    if(not ts.LOCAL_TESTING):
+        t_amt.init_amt_hit_db()
+        t_amt.cancel_hits()
+        t_amt.post_hit(3)
             
     return Application([url(ts.URL_PREFIX+ r"/rlogin", ta.reqLoginHandler),
                         url(ts.URL_PREFIX+ r"/dlogin", ta.devLoginHandler),
