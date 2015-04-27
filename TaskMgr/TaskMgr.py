@@ -22,28 +22,35 @@ from datetime import datetime
 
 TaskTree = Tree()
 
-def new_msg(WID, TID, mode, task="", profile={}):
-    #header info
+def new_msg(mode="", WID="", TID="", profile={}):
 
     msg = {
+        #header info
         'mode' : mode, #idle,ready,leaf,branch,sap,select
         'WID' : WID,
         'TID' : TID,
+        
         'preference' : "", #leaf/branch/sap
-        'time_end' : None,
         'time_start' : None,
         'profile' : profile,
 
-    #branch info
+        #branch info
         'branch_task' : "", #instructions
         'branch_data' : [], #worker results for each new branch
         'branch_data_type' : [], #is each result a leaf or a branch
 
-    #leaf info
+        #super
+        'super_mode':"",      #pending,approved
+        'super_task': [],      #instructions of branches of children
+        'super_task_ids': [],      #TIDs of child branch task nodes
+        'super_approve': [],    #True/false approve or reject child branches
+        'super_data':[],         #reasons for rejection or approval (optional)
+
+        #leaf info
         'leaf_task' : "", #instructions 
         'leaf_data' : "", #worker results
 
-    #sap info
+        #sap info
         'sap_task' : [], #instructions (solutions from each TID)
         'sap_task_ids' : [], #matching TIDs for the instructions
         'sap_work' : [], #worker results
@@ -76,16 +83,16 @@ def task_to_msg(task):
             
     return msg
 
+def msg_wsh(msg,wsh):
+    msg['WID'] = self.workerId
+    msg['preference'] = self.preference
+    msg['time_start'] = self.time_stamp
+    msg['profile'] = self.profile
+    return msg
+
 class hitHandler(ta.BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        # global TaskId
-        # print "\n****Get method " + str(TaskId);
-        # hash_id = hashlib.sha512(str(TaskId)+salt).hexdigest();
-        # print "Task ID: "+ hash_id
-        # TaskId += 1;
-        # TaskTree.add_node(hash_id);
-
         workerId = self.get_argument("workerId",None)
         # assignmentId = self.get_argument("assignmentId",None)
         # hitId = self.get_argument("hitId",None)
@@ -101,20 +108,13 @@ class hitHandler(ta.BaseHandler):
                     local_testing=ts.LOCAL_TESTING)
 
     def post(self):
-        # Accept task and 
+        #should probably do some cleanup here...
+        #like closing the users websocket, etc.
         print "Task Submitted"
-        TaskTree.add_node(hash_id);
 
-# def doNextTask(id,ws):	
-#     # NJ : 1. Check if you need more workers
-#     # NJ : 2. Must pass next free task to the worker
-#     worker_dict[id]['Task'] = '0' ; #get_task(); SB 
-#     ws.write_message("WakeUp"); #placeholder msg - temp 
-#     return True
-
-# def send_msg_to_socket(msg):
-#     socket = wm.W.get_socket(msg['WID'])
-#     socket.write_message(msg)
+def send_task(msg):
+    socket = wm.W.get_socket(msg['WID'])
+    socket.send_message(msg)
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
@@ -131,17 +131,15 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         print "ready callback" #???
 
     def task_callback(self,msg):
-        if(msg['mode'] != "select"):
-            TaskTree.save_results(msg_to_task(msg))
-        task = TaskTree.get_task("branch")
-        self.send_msg(task_to_msg(task))
+        TaskTree.save_results(msg_to_task(msg))
+        wm.W.complete(self.workerId,msg['TID'],0.05)
+        self.send_msg(msg_wsh(new_msg(self.workerId,"","idle"),self))#fill in params more completely
         print "task callback" 
 
     def select_callback(self,msg):
         wm.W.set_type(self.workerId,msg['preference'])
         self.preference = msg['preference']
-        #jump to leaf/branch/sap to grab a new task:
-        self.callback[self.preference](msg) 
+        self.send_msg(new_msg(self.workerId,"","idle"))#fill in params more completely
         print "select callback"
 
         

@@ -119,8 +119,7 @@
                  ws_url = "wss://crowd.ecn.purdue.edu{{url_prefix}}/websocket?workerId="+"{{workerId}}";
                  
              ws = new WebSocket(ws_url);
-             console.log("Websocket created = "+ws_url);
-
+             
              hide_all();
              
              ws.onmessage = function(event)
