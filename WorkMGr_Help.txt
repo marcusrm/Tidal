@@ -8,8 +8,8 @@
 #
 #
 # TASK MGR INTERFACE
-#assign(TYPE,TID)
-#complete(WID,TID,AmountPay)
+#assign(TYPE,TID)   SB: Look for a worker of type and assign that worker task TID
+#complete(WID,TID,AmountPay)  SB: idle_tasks()m- counts number of free tasks that needs workers
 #pending(WID,TID,AmountPay)  # Specify amount paayable
 #
 #

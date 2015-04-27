@@ -19,6 +19,7 @@
          };
 
          function hide_all(){
+             return 
              var x = document.getElementsByClassName('mode');
              var i;
              for (i = 0; i < x.length; i++) {
@@ -28,7 +29,7 @@
          }
          function error(){
              hide_all();
-             byId('error').style.display = 'block';
+             //byId('error').style.display = 'block';
          }
 
          function send_select(preference){             
@@ -44,6 +45,7 @@
              byId("leaf_instructions").innerHTML = msg.leaf_task;
          }
          function send_leaf(){
+            console.log("Leaf send")
              msg.mode = "leaf";
              msg.leaf_data = byId("leaftask_text").value;
              ws.send(JSON.stringify(msg));
@@ -51,13 +53,15 @@
          
          function send_branch() {
              msg.mode = "branch";
-             if(document.BranchForm.choice[1].checked)
+             if(document.BranchForm.choice[0].checked)
                  send_leaf();
              else{                 
                  var num = byId('branchnum').value;
                  
                  for(i=0; i<num;i++){
+                    console.log("Branch send")
                      var sub_is_branch = (byName("Task"+i+"Pred")[1]).checked;
+                     console.log("Branch data is " + byId("branch_task"+i).value);
                      msg.branch_data.push(byId("branch_task"+i).value);
                      if(sub_is_branch)
                          msg.branch_data_type.push("branch");
@@ -119,8 +123,10 @@
                  ws_url = "wss://crowd.ecn.purdue.edu{{url_prefix}}/websocket?workerId="+"{{workerId}}";
                  
              ws = new WebSocket(ws_url);
-             
+             console.log("Websocket created = "+ws_url);
+
              hide_all();
+
              
              ws.onmessage = function(event)
              {
@@ -129,8 +135,8 @@
                  console.log("message = " + event.data);
                  
                  hide_all();
-                 byId(msg.mode).style.display = 'block';
-                 byId(msg.mode).style.disabled = false;
+                 //byId(msg.mode).style.display = 'block';
+                 //byId(msg.mode).style.disabled = false;
                  
                  switch(msg.mode){
                      case "idle":

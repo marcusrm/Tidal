@@ -1,5 +1,5 @@
 from node import Node
-import taskconst
+import myconst
 
 
 ''' Tree dictionary looks like this 
@@ -25,13 +25,13 @@ class Tree:
 
 		return node
 
-	def remove_node(self,id,subtree=taskconst.YES):
+	def remove_node(self,id,subtree=myconst.YES):
 		''' Delete a node form the dict of Tree class.
 		Note that all its children will be deleted as well'''
 		#Delete from Parent's child list
 		parent = self[id].parent
 		print "Node "+id + "'s subtree deleted -",
-		if subtree is taskconst.YES:
+		if subtree is myconst.YES:
 			self.del_node(id)
 	 	self[parent].del_child(id)
 		# Delete from Tree Dict
@@ -47,12 +47,12 @@ class Tree:
 			#print child+",",
 			del self.__nodes[child] # delete from tree
 
-	def display(self,id,depth=taskconst.ROOT):
+	def display(self,id,depth=myconst.ROOT):
 		''' Display the task tree '''
 		children = self[id].children
 		#print self[id].parent
 		
-		if depth == taskconst.ROOT:
+		if depth == myconst.ROOT:
 			print "{0}".format(id)
 		else:
 			print '    '*depth,"{0}".format(id)
@@ -66,7 +66,7 @@ class Tree:
 		print self.__nodes;
 		#print self.__dict__;
 	
-	def traverse(self,id,mode=taskconst.DEPTH):
+	def traverse(self,id,mode=myconst.DEPTH):
 		''' DFS or BFS Traversal '''
 		yield id
 		queue = self[id].children
@@ -77,10 +77,6 @@ class Tree:
 				queue = next + queue[1:]
 			elif mode == BREATH:
 				queue = queue[1:]+next
-	def activeTaskNum():pass
-
-	def supervisionTaskNum():pass
-
 
 	def __getitem__(self,key):
 		return self.__nodes[key]

@@ -11,7 +11,7 @@ function RJ_generateTaskpage(taskid, workerid)
 function opensocket(workid)
 {
 	console.log("Entered opensocket");
-	var ws_url = "ws://localhost:8888/websocket?Id="+workid;
+	var ws_url = "wss://localhost:8888/websocket?Id="+workid;
 	ws = new WebSocket(ws_url);
     console.log("Websocket created = "+ws_url);
 

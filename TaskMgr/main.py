@@ -96,14 +96,14 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 def main():
 	application = tornado.web.Application(
 		[
-		    (r"/", MainHandler),
+		    (r"/", hitHandler),
 		    (r"/websocket", WebSocketHandler),
 			],
 		static_path=os.path.join( os.path.dirname(__file__), "static"),
 		template_path=os.path.join( os.path.dirname(__file__), "templates"),
 		debug=True
 		)
-	application.listen(8888)
+	application.listen(8002)
 	tornado.ioloop.IOLoop.instance().start()
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ import tornado.websocket
 import tornado.ioloop
 import tornado.template
 import os.path
+import uuid
 from urlparse import urlparse  # py3
 import hashlib
 # Task Tree Imports
@@ -16,51 +17,12 @@ import sys
 sys.path.append('../')
 import tidal_settings as ts
 import tidal_auth as ta
+import tidal_msg  as tm
 import WorkMgr as wm
 from datetime import datetime
 
 
 TaskTree = Tree()
-
-def new_msg(mode="", WID="", TID="", profile={}):
-
-    msg = {
-        #header info
-        'mode' : mode, #idle,ready,leaf,branch,sap,select
-        'WID' : WID,
-        'TID' : TID,
-        
-        'preference' : "", #leaf/branch/sap
-        'time_start' : None,
-        'profile' : profile,
-
-        #branch info
-        'branch_task' : "", #instructions
-        'branch_data' : [], #worker results for each new branch
-        'branch_data_type' : [], #is each result a leaf or a branch
-
-        #super
-        'super_mode':"",      #pending,approved
-        'super_task': [],      #instructions of branches of children
-        'super_task_ids': [],      #TIDs of child branch task nodes
-        'super_approve': [],    #True/false approve or reject child branches
-        'super_data':[],         #reasons for rejection or approval (optional)
-
-        #leaf info
-        'leaf_task' : "", #instructions 
-        'leaf_data' : "", #worker results
-
-        #sap info
-        'sap_task' : [], #instructions (solutions from each TID)
-        'sap_task_ids' : [], #matching TIDs for the instructions
-        'sap_work' : [], #worker results
-        'sap_data' : "", #sapper results 
-        'sap_rating' : [], #rates 
-        'sap_reject' : [] #returns unsatisfactory taskids
-    }
-
-    return msg
-
     
 #NOTE! when task can't find anything it should return
 #a blank object with a TYPE of "idle"
@@ -83,7 +45,7 @@ def task_to_msg(task):
             
     return msg
 
-def msg_wsh(msg,wsh):
+def msg_wsh(self,msg,wsh):
     msg['WID'] = self.workerId
     msg['preference'] = self.preference
     msg['time_start'] = self.time_stamp
@@ -93,7 +55,11 @@ def msg_wsh(msg,wsh):
 class hitHandler(ta.BaseHandler):
     @tornado.web.authenticated
     def get(self):
+        tid = uuid.uuid4().hex
+
+        TaskTree.add_node(tid);
         workerId = self.get_argument("workerId",None)
+        print "Shr:WID = " + workerId + " TID = " + tid
         # assignmentId = self.get_argument("assignmentId",None)
         # hitId = self.get_argument("hitId",None)
         
@@ -112,9 +78,10 @@ class hitHandler(ta.BaseHandler):
         #like closing the users websocket, etc.
         print "Task Submitted"
 
+
 def send_task(msg):
     socket = wm.W.get_socket(msg['WID'])
-    socket.send_message(msg)
+    socket.send_msg(msg)
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
@@ -131,9 +98,12 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         print "ready callback" #???
 
     def task_callback(self,msg):
-        TaskTree.save_results(msg_to_task(msg))
-        wm.W.complete(self.workerId,msg['TID'],0.05)
-        self.send_msg(msg_wsh(new_msg(self.workerId,"","idle"),self))#fill in params more completely
+        TaskTree.save_results(msg)                       # save results of the task
+        TaskTree.wait_for_approval(msg['TID'],msg['WID'])# send msg over socket to wait for approval
+        TaskTree.ask_approval(msg['TID'])                # send msg to parent to approve 
+        wm.W.complete(self.workerId,msg['TID'],0.05)    # Payment
+
+        #self.send_msg(tm.new_msg(self.workerId,"","idle"),self))#fill in params more completely
         print "task callback" 
 
     def select_callback(self,msg):
@@ -198,15 +168,19 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         return True
 
     def on_message(self,evt):
+        print "Shruthi onmsg"
+
         msg = tornado.escape.json_decode(evt)
-        
+        #print msg['branch_data']
         #enforce correct timing & start new period. 
         msg['time_start'] = self.time_stamp
         msg['time_end'] = datetime.utcnow()
         self.time_stamp = datetime.utcnow()
         
+        # S1. Store task's results 
         if(self.callback[msg['mode']] is not None):
             self.callback[msg['mode']](msg)
+        #
             
 
     def open(self): # args contains the argument of the forms
@@ -217,7 +191,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         else:
             wm.W.set_socket(self.workerId,self)
             
-        selectmsg = new_msg(self.workerId,"","select")
+        selectmsg = tm.new_msg(mode="select",WID=self.workerId,TID=TaskTree.get_maintask())
         self.send_msg(selectmsg)
         
         # self.stream.set_nodelay(True) #what's this?
@@ -225,3 +199,4 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def on_close(self):
         print "Closing socket for" + self.workerId
         wm.W.logout(self.workerId)
+

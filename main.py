@@ -46,6 +46,7 @@ def init_app():
 
 if __name__ ==  "__main__":
     app = init_app()
+    print ts.PORT
     app.listen(ts.PORT)
     IOLoop.instance().start()
 

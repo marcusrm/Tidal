@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7
 
 
-PORT=8008
+PORT=8002
 URL_PREFIX = '/%02d'%(PORT % 100)
 
 PASSWORD_DB = 'static/passwords.db'
