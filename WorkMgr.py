@@ -48,7 +48,7 @@ class W(object):
 		# Profile based information
 		self.TaskPend={}		# {'TID':AmountEarned,...}
 		self.TaskHist=[]		# List of all tasks done
-		self.Pt={'branch':0,'leaf':0,'sap':0}
+		self.Pt={'branch':0,'leaf':0,'sap':0} 	# Total Time worke/idled, money earned, tasks done,  
 		
 	# Add Worker	
 	@staticmethod
