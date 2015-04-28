@@ -123,7 +123,7 @@ class reqLoginHandler(BaseHandler):
         
     def post(self):
         if self.current_user: #if they're already logged in:
-            self.redirect(ts.URL_PREFIX+"/secret")
+            self.redirect(ts.URL_PREFIX+"/RequesterTaskMgr")
         else:
             username = self.get_argument("username")
             password = self.get_argument("password")
@@ -155,7 +155,7 @@ class reqLoginHandler(BaseHandler):
                     self.write(x+"<br>")
                 self.render("rlogin.html",url_prefix=ts.URL_PREFIX)
             else:
-                self.redirect(ts.URL_PREFIX+"/secret")    
+                self.redirect(ts.URL_PREFIX+"/RequesterTaskMgr")    
           
 class devLoginHandler(BaseHandler):
     def get(self):
@@ -169,7 +169,7 @@ class devLoginHandler(BaseHandler):
         
     def post(self):
         if self.current_user: #if they're already logged in:
-            self.redirect(ts.URL_PREFIX+"/secret")
+            self.redirect(ts.URL_PREFIX+"/RequesterTaskMgr")
         else:
             username = self.get_argument("username")
             password = self.get_argument("password")
@@ -187,7 +187,7 @@ class devLoginHandler(BaseHandler):
                     self.write(x+"<br>")
                 self.render("dlogin.html",url_prefix=ts.URL_PREFIX)
             else:
-                self.redirect(ts.URL_PREFIX+"/secret")    
+                self.redirect(ts.URL_PREFIX+"/RequesterTaskMgr")    
                 
 class wrkLoginHandler(BaseHandler):
     def get(self):
@@ -247,6 +247,7 @@ class logoutHandler(BaseHandler):
         self.clear_all_cookies()
         self.render("logout.html")
 
+'''
 class secretHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
@@ -257,6 +258,7 @@ class secretHandler(BaseHandler):
             self.redirect(ts.URL_PREFIX+"/logout")
         if self.get_argument("login",None):
             self.redirect(ts.URL_PREFIX+"/login")
+'''
 
 class missingHandler(BaseHandler):
     @tornado.web.authenticated

@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7
 
 
-PORT=8008
+PORT=8007
 URL_PREFIX = '/%02d'%(PORT % 100)
 
 PASSWORD_DB = 'static/passwords.db'
@@ -15,4 +15,4 @@ MIN_SIZE_USERNAME=8
 MIN_SIZE_PASSWORD=8
 
 
-LOCAL_TESTING=True
+LOCAL_TESTING=False
