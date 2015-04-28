@@ -13,17 +13,15 @@ import tidal_amt as AMT #Using grant_bonus,post_hit,pay_worker
 import sqlite3
 import pickle
 from Queue import PriorityQueue
-if(DEVMODE):
-	import os,sys
-	os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
+import os,sys
+os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
+
+if DEVMODE:
 	from pdb import set_trace as brk		# Breakpoint
 	
 # Defining Global Worker Variables
 w={}				# Worker Dictionary of Objects
 wDBcon={}			# Worker Database Connection Object
-wIdleThres=10		# Idle Time Threshold in minutes
-wIdlePay=0.20		# Idle Time Pay in dollars $$$$
-wTaskPay=0.50		# Pay amount per task $$$$
 
 # Defining Self Contained Class
 class W(object):
@@ -34,6 +32,11 @@ class W(object):
 	Lleaf=	 []     # List of all online leafers  
 	Lbranch= []		# List of all online branchers
 	Lsap=	 []		# List of all online sappers
+	
+	# Class Attributes- Pay Related
+	wIdleThres=10		# Idle Time Threshold in minutes
+	wIdlePay=0.20		# Idle Time Pay in dollars $$$$
+	wTaskPay=0.50		# Pay amount per task $$$$
 	
 	# Priority Queues of leafers (priority,WID)
 	LQueue={'branch':PriorityQueue(),'leaf':PriorityQueue(),'sap':PriorityQueue()}
@@ -55,7 +58,7 @@ class W(object):
 		self.PmoneyEarned	=0	# Net money earned
 		self.PmoneyPend		=0	# Pending amount										# RESET
 		
-		self.PtaskDoneCurrent=0	# If Active in current session							# RESET
+		self.PtaskDoneCurrent=0	# Tasks done in current session							# RESET
 		self.PtaskDone		=[]	# List of TIDs completed
 		self.Ptaskapprove	=0	# Total number of approved tasks
 		self.Ptaskreject	=0	# Total number of tasks rejected
@@ -174,13 +177,12 @@ class W(object):
 	# Update Current IDLE Time
 	@staticmethod
 	def addIdleTime(WID,TimeIdle=0):
-		global wIdleThres, wIdlePay
 		try:
 			w[WID].PtimeIdle+=TimeIdle								# Incrementing Idle Time [minutes]
 			
 			# Pay only if idle greater than threshold and atleast one task done in current session
-			if(w[WID].PtimeIdle>wIdleThres and PtaskDoneCurrent>0):	
-				w[WID].PmoneyPend+=wIdlePay							# Increment worker's amount
+			if(w[WID].PtimeIdle>W.wIdleThres and PtaskDoneCurrent>0):	
+				w[WID].PmoneyPend+=W.wIdlePay							# Increment worker's amount
 				w[WID].PtimeIdle=0									# Reset Idle counter back to zero
 			return True
 		
@@ -221,7 +223,7 @@ class W(object):
 			
 			W.Lidle.remove(WIDassign)
 			w[WIDassign].TID=TID
-			W.DbUpdate(WID)
+			W.DbUpdate(WIDassign)
 			return WIDassign
 		except:
 			print('WrkMgr: worker assign error. TID-'+str(TID))
@@ -229,25 +231,36 @@ class W(object):
 
 	# Assign Task to Worker
 	@staticmethod
-	def complete(WID,Accepted=True,AmountPay=wTaskPay):
+	def complete(WID,TaskAccepted=True):
 		global w
 		WID=str(WID)
 		
 		# Add worker back to Idle List
 		try:
+			# Task History Based
 			w[WID].PtaskDone.append(w[WID].TID);			# Save Task History of worker
-			w[WID].TID=False								# Set worker object attributes
-			w[WID].PmoneyPend=AmountPay+w[WID].PmoneyPend 	# Adding to the worker's current earned amount
-			w[WID].PtaskDoneCurrent+=1						# Incrementing the number of tasks they've done 
+			self.PtaskDoneCurrent+=1						# Incremement tasks done in  current session
+			w[WID].TID=False								# Reset TID label for worker
+			
+			# Acceptance/Rejection
+			if TaskAccepted:
+				w[WID].Ptaskapprove	+=1						# Increment worker's total number of approved tasks
+				self.PmoneyPend		+=W.wTaskPay				# Increment current pay session
+			else:
+				self.Ptaskreject	+=1						# Increment worker's total number of rejected tasks
+				
+			# Add Worker to Priority Lists and Idle Lists
 			if WID not in W.Lidle:
 				W.Lidle.append(WID)							# Add to idle list
 				W.DbUpdate(WID)								# Update to database
 				W.LQpush(WID)								# Push worker back into Priority Queue
+				print('WrkMgr: complete- success. Worker added back to pool. WID-'+str(WID))
 				return True
 		except:
 			print('WrkMgr: worker Complete error. Error reporting task completion. WID-'+str(WID))
 			return False
 
+			
 	# Return Current Task ID
 	@staticmethod
 	def get_TID(WID):
@@ -327,10 +340,10 @@ class W(object):
 		try:
 			# Connect to Database
 			if(Sandbox):
-				wDBcon=sqlite3.connect('static/wDB_sandbox.db')
+				wDBcon=sqlite3.connect('static/wDBsandbox.db')
 			else:
-				wDBcon=sqlite3.connect('static/wDB_deploy.db')
-			
+				wDBcon=sqlite3.connect('static/wDBdeploy.db')
+
 			# Setup Table and parameters of connection
 			cmd='create table if not exists WM(WID text primary key,OBJECT text)' 	# WORKER TABLE
 			cmd1='create table if not exists WMList(Type text primary key,OBJECT text)' 	# WORKER TABLE
@@ -571,16 +584,7 @@ W.WMinit()		# Automatically adds the 'admin' to pool
 #################### DEVELOPER SPACE ######################################
 if(DEVMODE==True and DUMMYCODE==True):			# Add Dummy Workers To Pool
 	type=['leaf','branch','sap']
-	for i in xrange(10):
-		#W.add(str(i))
-		if i%2==0:
-			WID=str(i)
-			W.login(WID,'AID')
-			W.set_type(WID,type[i%5%3])	# Random Worker Type
-
-	print("\n"*10)
+	W.add('0');	W.add('1'); W.add('2');
+	W.login('1','aid1'); W.login('2','aid2');
+	W.set_type('1','leaf'); W.set_type('2','branch')
 	W.displ()
-	
-	Assigned=W.assign('leaf','tid'); print('Worker Assigned= '+str(Assigned))
-	brk()
-	W.complete(Assigned,'TID',0)
