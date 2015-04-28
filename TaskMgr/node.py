@@ -36,6 +36,10 @@ class Node:
 		if self.__parent is not None:
 			return self.__parent
 
+	@property
+	def msg(self):
+		return self.__msg
+
 	def add_child(self,id):
 		self.__children.append(id)
 		self.__branches += 1
@@ -95,9 +99,21 @@ class Node:
 		self.__msg['super_mode']	= 'unapproved'
 		self.__msg['WID'] 			= workid
 		tm.send_task(self.__msg)	
+		return
+
+	def requestmsg(self):
+		self.__msg['branch_task'] 	= 'Hi there, can you help me plan a 5 day trip to NYC ? Some details for planning \
+		1. A cruise ride\
+		2. Shopping\
+		3. Broadway show\
+		4. 3 star Hotels\
+		5. Delta Airlines'
+
+		self.__msg['mode']			= 'branch'
+		self.__msg['preference']	= 'branch'
+		return 
+
 
 		
-
-		return
 
 

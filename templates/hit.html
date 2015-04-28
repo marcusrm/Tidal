@@ -51,11 +51,10 @@
          
          function send_branch() {
              msg.mode = "branch";
-             if(document.BranchForm.choice[0].checked)
+             if(document.BranchForm.choice[1].checked)
                  send_leaf();
              else{                 
                  var num = byId('branchnum').value;
-                 
                  for(i=0; i<num;i++){
                     console.log("Branch send")
                      var sub_is_branch = (byName("Task"+i+"Pred")[1]).checked;
@@ -251,7 +250,6 @@
 	    <input type="button" value="Sap" onclick="send_select('sap')"> </br>
 
         </div>
-        
         <div class="mode" id="idle">
             <h2> There are currently no tasks to be done. Please wait until one becomes available 
                 and we'll notify you. In the meantime you will still be compensated at the rate of 
