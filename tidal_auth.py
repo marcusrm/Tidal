@@ -214,13 +214,13 @@ class wrkLoginHandler(BaseHandler):
             self.render("404.html")
             
         elif(not ts.LOCAL_TESTING and not t_amt.hit_exists(hitId)):
-            self.write("bad task id or worker ID")
+            self.write("bad hit id or worker ID")
             self.render("404.html")
             
         else:
             if(not wm.W.WIDexist(workerId)):
                 wm.W.add(workerId)
-            wm.W.login(workerId,assignmentId)
+            wm.W.login(workerId,hitId)
             
             self.set_secure_cookie("wrk",workerId,expires_days=None)
             

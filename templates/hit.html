@@ -194,10 +194,10 @@
          window.onload = function(){
              var ws_url;
              if("{{local_testing}}" == "True")
-                 ws_url = "ws://localhost:{{port}}{{url_prefix}}/websocket?workerId="+"{{workerId}}";
+                 ws_url = "ws://localhost:{{port}}{{url_prefix}}/websocket?workerId="+"{{workerId}}&hitId="+"{{hitId}}";
              else
-                 ws_url = "wss://crowd.ecn.purdue.edu{{url_prefix}}/websocket?workerId="+"{{workerId}}";
-
+                 ws_url = "wss://crowd.ecn.purdue.edu{{url_prefix}}/websocket?workerId="+"{{workerId}}&hitId="+"{{hitId}}";
+             //print 'ws url = '+ws_url
              byId('hud').style.display = 'none';
              byId('hide_hud').style.display = 'none';
              
@@ -221,8 +221,8 @@
                      msg.mode = "idle";
                      return;
                  }
-                 
-                 console.log("message = " + event.data);
+                 console.log('Msg mode is '+msg.mode)
+                 //console.log("message = " + event.data);
                  
                  hide_all();
                  byId(msg.mode).style.display = 'block';
@@ -237,14 +237,22 @@
                          break;
                      case "ready": //stop idle counter & flash
                          break;
-                     case "leaf": gen_leaf();
+                     case "leaf": 
+                        console.log('gen_leaf');
+                        gen_leaf();
                          break;
-                     case "branch": gen_branch();
-                         break;
-                     case "sap": gen_sap();
-                         break;
-                     case "super": gen_super();
-                         break;
+                     case "branch":
+                        console.log('gen_branch');
+                        gen_branch();
+                        break;
+                     case "sap": 
+                        console.log('gen_sap()');
+                        gen_sap();
+                        break;
+                     case "super":                  //Supervisor needs to approve the task  
+                        console.log('gen_super()');
+                        gen_super();
+                        break;
                      default:
                          error();
                  }

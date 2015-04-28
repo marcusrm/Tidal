@@ -9,6 +9,7 @@ def new_msg(mode="", WID="", TID="", profile={}):
         
         'preference'            : "",       #leaf/branch/sap
         'time_start'            : None,
+        'time_end'              : None,
         'profile'               : profile,
 
         #branch info

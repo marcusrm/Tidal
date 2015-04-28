@@ -5,71 +5,62 @@ import copy
 import hashlib
 from Queue import PriorityQueue as pq
 
-global TaskQueue
-
-
-''' Task Priprity Queue Structure '''
-class TidalQueue:
+''' Task Tree Structure '''
+class Tree():
 	def __init__(self):
-		self.__q   = pq()
-		self.__len	   = 0
+		self.__nodes = {} 					# Dict of nodes
+		self.__root  = 0					# Root TID - Requester's task
+		self.__count = 1					# tid count generator
+		self.__q   	   = pq()				# Priority Queue
+		self.__qlen	   = 0					# Queue length
 
+	# Priority Queue Methods
 	@property 
 	def get_q_len(self):					# Get the current length of the queue
-		return self.__len					
+		return self.__qlen					
 
 	@property 
 	def get_q(self):						# Get a copy of the queue
-		return self.__q
+		print self.__q
 
 	def add_to_q(self,priority,tid):
 		self.__q.put_nowait((priority,tid)) # Put task in queue
-		self.__len += 1					    # Keep queue length count
+		self.__qlen += 1					# Keep queue length count
+		print 'TidalQueue: Add element - len is ' +str(self.__qlen)
 
 	def get_q_elem(self):
 		elem = self.__q.get_nowait();		# Pull next task from queue
-		self.__len -= 1						# Decrement queue length
-		return elem[1]						# Return TID of next task in queue
+		self.__qlen -= 1					# Decrement queue length
+		print "TidalQueue: Removed element - len is" + str(self.__qlen)
+		return elem 						# Return TID of next task in queue
 
-
-''' Task Tree Structure '''
-class Tree:
-	def __init__(self):
-		self.__nodes = {} #Dict of nodes
-		self.__root  = 0
-		self.__count = 1
-
+	# Task Tree Methods
 	@property 
 	def nodes(self):
 		return self.__nodes
 
-	# Add node to the tree dictionary, add id to the parent's child-list
 	def add_node(self,tid,parent=None):
 		''' Create  a new node '''
-
+		print 'Create Node: ' + str(tid) 
 		node = Node(tid,parent)
-		self[id] = node 						# Add to the class Dict
+		self[tid] = node 						# Add node to the class Dict
 		if parent is not None:
-			self[parent].add_child(tid)
+			self[parent].add_child(tid)			# Add to parent's child
 			print self[parent].children
-		else:									#Store tree root id to access the dictionary 'nodes'
-			self.__root = tid
-			node.requestmsg()
+		else:									# Store tree root id to access the dictionary 'nodes'
+			self.__root = tid 					# Store root tid
+			node.requestmsg()					# Create Dummy Msg
 
-		TaskQueue.add_to_q((self.__count,tid))#add task to the priority queue based on creation time
+		self.add_to_q(self.__count,tid)			# Add task to the priority queue based on creation order
 		return node
 
 	def remove_node(self,id,subtree=taskconst.YES):
-		''' Delete a node form the dict of Tree class.
-		Note that all its children will be deleted as well'''
-		#Delete from Parent's child list
 		parent = self[id].parent
-		print "Node "+id + "'s subtree deleted -",
-		if subtree is taskconst.YES:
-			self.del_node(id)
-	 	self[parent].del_child(id)
-		# Delete from Tree Dict
-		del self[id]
+		print "Del:Node "+id + "'s subtree"
+		if subtree is taskconst.YES:			# Node's child-tree is deleted
+			self.del_node(id)					
+	 	self[parent].del_child(id)				# Delete node from all child lists
+		del self[id]							# Delete a node form the dict of Tree class
 
 	def del_node(self, id):
 		'''Delete a node and all its subtree '''
@@ -125,8 +116,7 @@ class Tree:
 				self.__count += 1				
 				newnode = self.add_node(newtid,tid)
 				newnode.fill_newmsg(msg,i);
-		else:
-			print "**************Leaf node type = " + msg['mode']
+		#if (msg['mode'] == 'sap'):									# Add sapped data as input to parent node
 
 		#self.display(self,self.__root);
 
@@ -163,8 +153,7 @@ class Tree:
 			print 'Root not set yet !!!Check for the control flow'
 			return self.__root
 	def getmsgcp(self,tid):
-		msg = tms.new_msg()
-		msg = copy.deepcopy(self[tid].msg())
+		msg =self[tid].msg()
 		return msg
 
 	def __getitem__(self,key):
@@ -176,5 +165,3 @@ class Tree:
 	def __delitem__(self,key):
 		del self.__nodes[key]
 
-# Define a structure of class type TidalQueue
-TaskQueue = TidalQueue()

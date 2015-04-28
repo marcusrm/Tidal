@@ -10,8 +10,8 @@ import uuid
 from urlparse import urlparse  # py3
 import hashlib
 # Task Tree Imports
-from tree import Tree,TidalQueue
-
+from tree import Tree
+import copy
 import myconst
 
 
@@ -21,14 +21,15 @@ import tidal_settings as ts
 import tidal_auth as ta
 import tidal_amt as t_amt
 import WorkMgr as wm
-import tidal_msg as tmsg
+import tidal_msg as tms
 from datetime import datetime
+
+#debug
+from pdb import set_trace as brk
 
 
 TaskTree    = Tree()
 
-
-    
 #NOTE! when task can't find anything it should return
 #a blank object with a TYPE of "idle"
 def task_to_msg(task):
@@ -53,7 +54,7 @@ def task_to_msg(task):
 def msg_wsh(msg,wsh):
     msg['WID'] = wsh.workerId
     msg['preference'] = wsh.preference
-    msg['time_start'] = wsh.time_stamp
+    #msg['time_start'] = wsh.time_stamp
     msg['profile'] = wsh.profile
     return msg
 
@@ -88,36 +89,47 @@ class hitHandler(ta.BaseHandler):
 
 
 def send_task(msg):
+    #print msg
     socket = wm.W.get_socket(msg['WID'])
     socket.send_msg(msg_wsh(msg,socket))
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
-    def msg_wsh(self,tid):
-        msg = TaskTree.getmsgcp(tid);
+    def fill_msg_wsh(self,tid):
+        msg = tms.new_msg()
+        msg = copy.deepcopy(TaskTree.getmsgcp(tid));
         msg['WID']          = self.workerId
         msg['preference']   = self.preference
-        msg['time_start']   = self.time_stamp
+        #msg['time_start']   = self.time_stamp
         msg['profile']      = self.profile
+        msg['mode']         = 'branch'
+        print "Sending to ws of worker "+msg['WID']
         return msg
 
     def shake_tree(self):
+        try:
+            elem = TaskTree.get_q_len()
+            print 'Task Q length is '+str(elem)
+        except:
+            print '0 elements in queue'
 
         try:                                                 # get a task to assign
-            tq = TaskQueue.get_q_elem()
+            tq = TaskTree.get_q_elem()
             print 'queue id is ' + str(tq)
         except:
-            print "Exception : No tasks available"
+            print "Exception in shake_tree : No tasks available"
             return 
 
         wid = wm.W.assign('branch',tq[1])               # find a free worker 
         if(wid):
             ws = wm.W.get_socket(wid)
-            msg = msg_wsh(ws,tid)
-            print "Sending a msg to show a task to worker " + wid
+            msg = ws.fill_msg_wsh(tq[1])
+            print 'Sending a msg to show task ' + str(tq[1])+'to worker ' + wid
             send_task(msg)
             return
-
+        else:   
+            TaskTree.add_to_q(tq[0],tq[1])
+            return 0
 
     def send_msg(self,msg):
         self.write_message(tornado.escape.json_encode(msg))
@@ -156,15 +168,15 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def select_callback(self,msg):
         wm.W.set_type(self.workerId,msg['preference'])
         self.preference = msg['preference']
-        self.send_msg(tmsg.new_msg(mode="idle",WID=self.workerId,TID=""))#fill in params more completely
-        
+        self.send_msg(tms.new_msg(mode="idle",WID=self.workerId,TID=""))#fill in params more completely
+        print "select callback shake starts"
         self.shake_tree();                              # Look to match more work and tasks
-        print "select callback"
+        print "select callback shake returns"
     
     def __init__(self, application, request, **kwargs):
         super(WebSocketHandler, self).__init__(application, request, **kwargs)
         self.workerId = self.get_argument("workerId",None)
-        self.assignmentId = self.get_argument("assignmentId",None)
+        self.hitId = self.get_argument("hitId",None)
         self.callback = {"select" : self.select_callback,
                          "idle" : self.idle_callback,
                          "ready" : self.ready_callback,
@@ -240,7 +252,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             return
         else:
             wm.W.set_socket(self.workerId,self)
-        selectmsg = tmsg.new_msg(mode="select",WID=self.workerId,TID="")
+        selectmsg = tms.new_msg(mode="select",WID=self.workerId,TID="")
         self.send_msg(selectmsg)
         
     def on_close(self):
@@ -253,8 +265,10 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         #self.send_msg(tmsg.new_msg(mode="logout",WID=self.workerId,TID=""));
         
         #BUSY WAIT FOR AMT TO RESPOND.
-        while(t_amt.get_assignment(self.assignmentId).assignment_status != "Submitted"):
-            sleep(1);
-    
+        while(t_amt.get_hit(self.hitId).num_submitted != 0):
+            continue;
+
+        t_amt.delete_amt_hit(self.hitId)
+        
         wm.W.logout(self.workerId)
 
