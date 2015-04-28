@@ -164,7 +164,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def __init__(self, application, request, **kwargs):
         super(WebSocketHandler, self).__init__(application, request, **kwargs)
         self.workerId = self.get_argument("workerId",None)
-        self.assignmentId = self.get_argument("assignmentId",None)
+        self.hitId = self.get_argument("hitId",None)
         self.callback = {"select" : self.select_callback,
                          "idle" : self.idle_callback,
                          "ready" : self.ready_callback,
@@ -253,8 +253,10 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         #self.send_msg(tmsg.new_msg(mode="logout",WID=self.workerId,TID=""));
         
         #BUSY WAIT FOR AMT TO RESPOND.
-        while(t_amt.get_assignment(self.assignmentId).assignment_status != "Submitted"):
-            sleep(1);
-    
+        while(t_amt.get_hit(self.hitId).num_submitted != 0):
+            continue;
+
+        t_amt.delete_amt_hit(self.hitId)
+        
         wm.W.logout(self.workerId)
 

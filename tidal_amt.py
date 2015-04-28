@@ -7,6 +7,51 @@ import tidal_settings as ts
 import sqlite3
 import os 
 
+import threading
+import time
+
+class pay_bot(threading.Thread):
+    def __init__(self, hitId):
+        threading.Thread.__init__(self)
+        self.hitId = hitId
+
+    def run(self):
+        while(True):
+            try:
+                a = cl.get_hit(self.hitId).assignments[0]
+                break
+            except:                
+                time.sleep(5)
+        
+        if(a is not None and a.is_paid is False and a.assignment_status == "Submitted"):
+            try:
+                a.approve()
+                print "worker pay approved"
+            except:
+                pass
+
+class bonus_bot(threading.Thread):
+    def __init__(self, hitId, amount):
+        threading.Thread.__init__(self)
+        self.hitId = hitId
+        self.amount = amount
+
+    def run(self):
+        while(True):
+            try:
+                a = cl.get_hit(self.hitId).assignments[0]
+                break
+            except:                
+                time.sleep(5)
+        
+        if(a is not None):
+            try:                
+                a.grant_bonus(self.amount,"payment for Tidal task (#"+self.hitId+")")
+                print "worker bonus approved"
+            except:
+                pass
+
+
 BASE_REWARD = 0.05
 TIME_LIMIT = 3600
 KEYWORDS = ["tidal"]
@@ -70,16 +115,13 @@ def delete_amt_hit(hitId):
     conn.commit()
     conn.close()
 
-def grant_bonus(assignmentId, amount):
-    assignment = cl.get_assignment(assignmentId)
-    if(assignment != None):
-        assignment.grant_bonus(amount,"payment for Tidal task (#"+assignmentId+")")
+def grant_bonus(hitId, amount):
+    p = bonus_bot(hitId,amount)
+    p.start()
     
-def pay_worker(assignmentId):
-    assignment = cl.get_assignment(assignmentId)
-    if(assignment != None and assignment.is_paid() is False):
-        assignment.approve()
-        
+def pay_worker(hitId):
+    p = pay_bot(hitId)
+    p.start()        
     
 def num_idle_amt_hits():
     conn = sqlite3.connect(ts.AMT_HIT_DB)

@@ -5,8 +5,8 @@
 # Run W.api() to see all APIs offered
 
 # Dev inputs
-DEVMODE=True		# RUN STUFF IN SANDBOX
-DUMMYCODE=True		# RUN CODE AT END OF LIBRARY
+DEVMODE=False		# RUN STUFF IN SANDBOX
+DUMMYCODE=False		# RUN CODE AT END OF LIBRARY
 
 # Import Required Files
 import tidal_amt as AMT #Using grant_bonus,post_hit,pay_worker
@@ -44,7 +44,7 @@ class W(object):
 	# Initialization
 	def __init__(self,WID):
 		self.WID=WID			# Worker ID-> 			WORKER ID
-		self.AID=False			# Assignment ID->		CURRENT AMT ASSIGNMENT ID		# RESET
+		self.HID=False			# Hit ID->		CURRENT AMT HIT ID		# RESET
 		self.TID=False			# NA or assigned TID->	Current TID						# RESET
 		self.status='offline' 	# online, offline->    	WORKER STATUS 					# RESET
 		self.type=None			# leaf, sap, branch-> 	WORKER TYPE						# RESET
@@ -104,15 +104,15 @@ class W(object):
 	
 	# Login Worker
 	@staticmethod
-	def login(WID,AID=False,TYPE=None,SockObj=False):
+	def login(WID,HID=False,TYPE=None,SockObj=False):
 		global w
 		WID=str(WID)
 		if not(W.check(WID) & W.check(TYPE)):
 			print('WrkMgr: Login error: Invalid Arguments. WID-'+str(WID))
 			return False
 		
-		if(AID==False):
-			print('WrkMgr: WID-'+str(WID)+' Login Error: No Assignment ID specified')
+		if(HID==False):
+			print('WrkMgr: WID-'+str(WID)+' Login Error: No Hit ID specified')
 			return False
 
 		try:
@@ -129,8 +129,8 @@ class W(object):
 				# Update Socket Object for Worker
 				w[WID].Socket=SockObj
 				
-				# Associate WID with AID for current Login session
-				w[WID].AID=AID
+				# Associate WID with HID for current Login session
+				w[WID].HID=HID
 				
 				# Update specific worker and Class list
 				w[WID].status='online'
@@ -153,10 +153,11 @@ class W(object):
 		global w
 		WID=str(WID)
 		try:
-			AMT.pay_worker(WID)							# Paying Worker Base HIT Amount
+			AMT.pay_worker(w[WID].HID)							# Paying Worker Base HIT Amount
 			# LOG WORKER OUT AMT 
 			try:
-				AMT.grant_bonus(WID,w[WID].PmoneyPend) 	# Pay pending amount
+                                if(w[WID].PmoneyPend >= 0.01):
+                                        AMT.grant_bonus(w[WID].HID,w[WID].PmoneyPend) 	# Pay pending amount
 			except:
 				print "WrkMgr: logout Error. "+str(WID)+"AMT.grant_bonus error"
 				return False
@@ -366,7 +367,7 @@ class W(object):
 			for row in wDBcon.execute(cmd):
 				w[str(row[0])]=pickle.loads(row[1])
 				# Resetting a few fields
-				w[str(row[0])].AID				=False		# Assignment ID->		CURRENT AMT ASSIGNMENT ID
+				w[str(row[0])].HID				=False		# Hit ID->		CURRENT AMT HIT ID
 				w[str(row[0])].TID				=False		# NA or assigned TID->	Current TID				
 				w[str(row[0])].status			='offline' 	# online, offline->    	WORKER STATUS 			
 				w[str(row[0])].type				=None		# leaf, sap, branch-> 	WORKER TYPE				

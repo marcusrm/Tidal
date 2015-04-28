@@ -194,9 +194,9 @@
          window.onload = function(){
              var ws_url;
              if("{{local_testing}}" == "True")
-                 ws_url = "ws://localhost:{{port}}{{url_prefix}}/websocket?workerId="+"{{workerId}}";
+                 ws_url = "ws://localhost:{{port}}{{url_prefix}}/websocket?workerId="+"{{workerId}}&hitId="+"{{hitId}}";
              else
-                 ws_url = "wss://crowd.ecn.purdue.edu{{url_prefix}}/websocket?workerId="+"{{workerId}}";
+                 ws_url = "wss://crowd.ecn.purdue.edu{{url_prefix}}/websocket?workerId="+"{{workerId}}&hitId="+"{{hitId}}";
 
              byId('hud').style.display = 'none';
              byId('hide_hud').style.display = 'none';

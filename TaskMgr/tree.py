@@ -56,7 +56,7 @@ class Tree:
 			self.__root = tid
 			node.requestmsg()
 
-		TaskQueue.add_to_q((self.__count,tid))#add task to the priority queue based on creation time
+		TaskQueue.add_to_q(self.__count,tid)#add task to the priority queue based on creation time
 		return node
 
 	def remove_node(self,id,subtree=taskconst.YES):
