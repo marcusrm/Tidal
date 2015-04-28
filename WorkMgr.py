@@ -16,8 +16,8 @@ from Queue import PriorityQueue
 import os,sys
 os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
 
-if DEVMODE:
-	from pdb import set_trace as brk		# Breakpoint
+
+from pdb import set_trace as brk		# Breakpoint
 	
 # Defining Global Worker Variables
 w={}				# Worker Dictionary of Objects
@@ -224,7 +224,9 @@ class W(object):
 			
 			W.Lidle.remove(WIDassign)
 			w[WIDassign].TID=TID
+			
 			W.DbUpdate(WIDassign)
+			print('WrkMgr: assign successful. WID-'+str(WIDassign))
 			return WIDassign
 		except:
 			print('WrkMgr: worker assign error. TID-'+str(TID))
@@ -270,7 +272,7 @@ class W(object):
 	@staticmethod
 	def set_type(WID,TYPE):
 		global w
-	
+		TYPE=str(TYPE)
 		# Remove Worker from previous lists. Do first, ask later!! =)
 		try:
 			W.Lleaf.remove(WID);
@@ -319,11 +321,15 @@ class W(object):
 	@staticmethod
 	def set_socket(WID,SockObj):
 		global w
+
+		print('WrkMgr: set_socket: start')
 		try:
 			w[WID].Socket=SockObj
 			W.DbUpdate(WID)
+			print('WrkMgr: set_socket- success')
 			return True
 		except:
+			print('WrkMgr: set_socket- Failure')
 			return False
 			
 	# To retrieve socket object to worker
@@ -399,7 +405,9 @@ class W(object):
 		if WID in w:
 			# Database Stuff
 			try:
-				DBObject=pickle.dumps(w[WID],protocol=2)
+				wdump=w[WID]
+				wdump.Socket=False
+				DBObject=pickle.dumps(wdump,protocol=2)
 				cmd='insert or replace into WM values(?,?)'
 				cur=wDBcon.execute(cmd,(WID,DBObject))		
 			except:
@@ -420,7 +428,7 @@ class W(object):
 				print('WrkMgr: WID-'+str(WID)+' DbUpdate Error: Worker details not updatable')
 				return False
 	
-	# Delete Entry from Database
+	# Delete Entry from Database 
 	@staticmethod
 	def DbDelete(WID):
 		if WID in w:
@@ -455,6 +463,7 @@ class W(object):
 			W.LQueue[TYPE].put_nowait((-priority,WID))		# Note: '-'ve sign. Lower #=Higher Priority
 			return True
 		except:
+			print('WrkMgr Qpush Error: Push Exceptionn')
 			return False
 		
 	# Priority Queue for Worker Task Deployment- Return from Queue
@@ -470,7 +479,8 @@ class W(object):
 			return False
 		except:
 			print('WrkMgr Qpop Error: unknown exception with priority queue')
-	
+			return False
+			
 	# Return Data to the worker's console dashboard
 	@staticmethod
 	def getHUD(WID):
