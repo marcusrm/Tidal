@@ -5,8 +5,8 @@
 # Run W.api() to see all APIs offered
 
 # Dev inputs
-DEVMODE=True		# RUN STUFF IN SANDBOX
-DUMMYCODE=True		# RUN CODE AT END OF LIBRARY
+DEVMODE=False		# RUN STUFF IN SANDBOX
+DUMMYCODE=False		# RUN CODE AT END OF LIBRARY
 
 # Import Required Files
 import tidal_amt as AMT #Using grant_bonus,post_hit,pay_worker
