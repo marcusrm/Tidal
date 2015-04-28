@@ -1,12 +1,38 @@
 from node import Node
+import tidal_msg as tms
 import taskconst
 import copy
 import hashlib
+from Queue import PriorityQueue as pq
 
-''' Tree dictionary looks like this 
-{ node_id : node_obj of class Node,
-  next_id : next node_obj .... }
-'''
+global TaskQueue
+
+
+''' Task Priprity Queue Structure '''
+class TidalQueue:
+	def __init__(self):
+		self.__q   = pq()
+		self.__len	   = 0
+
+	@property 
+	def get_q_len(self):					# Get the current length of the queue
+		return self.__len					
+
+	@property 
+	def get_q(self):						# Get a copy of the queue
+		return self.__q
+
+	def add_to_q(self,priority,tid):
+		self.__q.put_nowait((priority,tid)) # Put task in queue
+		self.__len += 1					    # Keep queue length count
+
+	def get_q_elem(self):
+		elem = self.__q.get_nowait();		# Pull next task from queue
+		self.__len -= 1						# Decrement queue length
+		return elem[1]						# Return TID of next task in queue
+
+
+''' Task Tree Structure '''
 class Tree:
 	def __init__(self):
 		self.__nodes = {} #Dict of nodes
@@ -18,18 +44,19 @@ class Tree:
 		return self.__nodes
 
 	# Add node to the tree dictionary, add id to the parent's child-list
-	def add_node(self,id,parent=None):
+	def add_node(self,tid,parent=None):
 		''' Create  a new node '''
-		if parent is None:					#Store tree root id to access the dictionary 'nodes'
-			self.__root = id
 
-		node = Node(id,parent)
-		self[id] = node # Add to the class Dict
-
+		node = Node(tid,parent)
+		self[id] = node 						# Add to the class Dict
 		if parent is not None:
-			self[parent].add_child(id)
+			self[parent].add_child(tid)
 			print self[parent].children
+		else:									#Store tree root id to access the dictionary 'nodes'
+			self.__root = tid
+			node.requestmsg()
 
+		TaskQueue.add_to_q((self.__count,tid))#add task to the priority queue based on creation time
 		return node
 
 	def remove_node(self,id,subtree=taskconst.YES):
@@ -56,8 +83,8 @@ class Tree:
 
 	def display(self,id,depth=taskconst.ROOT):
 		''' Display the task tree '''
-		children = self[id].children
-		print self[id].children
+		if self[id] is not None:
+			print self[id].children
 		
 		if depth == taskconst.ROOT:
 			print "{0}".format(id)
@@ -90,6 +117,7 @@ class Tree:
 		self[tid].copy_msg(msg) 
 
 		if(msg['mode'] == 'branch'):								#add nodes to the tree
+			print "**************Branch node "
 			branch_count = len(msg['branch_data'])
 			for i in range(0,branch_count):
 				# Add new node to the tree
@@ -97,8 +125,10 @@ class Tree:
 				self.__count += 1				
 				newnode = self.add_node(newtid,tid)
 				newnode.fill_newmsg(msg,i);
+		else:
+			print "**************Leaf node type = " + msg['mode']
 
-		self.display(self,self.__root);
+		#self.display(self,self.__root);
 
 
 	def ask_approval(self,tid):
@@ -132,6 +162,10 @@ class Tree:
 		else:
 			print 'Root not set yet !!!Check for the control flow'
 			return self.__root
+	def getmsgcp(self,tid):
+		msg = tms.new_msg()
+		msg = copy.deepcopy(self[tid].msg())
+		return msg
 
 	def __getitem__(self,key):
 		return self.__nodes[key]
@@ -141,3 +175,6 @@ class Tree:
 
 	def __delitem__(self,key):
 		del self.__nodes[key]
+
+# Define a structure of class type TidalQueue
+TaskQueue = TidalQueue()

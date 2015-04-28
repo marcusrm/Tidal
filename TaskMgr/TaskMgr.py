@@ -10,8 +10,10 @@ import uuid
 from urlparse import urlparse  # py3
 import hashlib
 # Task Tree Imports
-from tree import Tree
+from tree import Tree,TidalQueue
+
 import myconst
+
 
 import sys
 sys.path.append('../')
@@ -23,12 +25,14 @@ import tidal_msg as tmsg
 from datetime import datetime
 
 
-TaskTree = Tree()
+TaskTree    = Tree()
+
+
     
 #NOTE! when task can't find anything it should return
 #a blank object with a TYPE of "idle"
 def task_to_msg(task):
-    msg = tmsg.new_msg()
+   
     msg['mode'] = task.type
     msg['WID'] = self.workerId
     msg['TID'] = task.TID
@@ -46,18 +50,12 @@ def task_to_msg(task):
             
     return msg
 
-def msg_wsh(self,msg,wsh):
-    msg['WID'] = self.workerId
-    msg['preference'] = self.preference
-    msg['time_start'] = self.time_stamp
-    msg['profile'] = self.profile
-    return msg
+
 
 class hitHandler(ta.BaseHandler):
     @tornado.web.authenticated
     def get(self):
         tid = uuid.uuid4().hex
-
         TaskTree.add_node(tid);
         workerId = self.get_argument("workerId",None)
         print "Shr:WID = " + workerId + " TID = " + tid
@@ -86,6 +84,33 @@ def send_task(msg):
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
+    def msg_wsh(self,tid):
+        msg = TaskTree.getmsgcp(tid);
+        msg['WID']          = self.workerId
+        msg['preference']   = self.preference
+        msg['time_start']   = self.time_stamp
+        msg['profile']      = self.profile
+        return msg
+
+    def shake_tree(self):
+
+
+        try:                                                 # get a task to assign
+            tq = TaskQueue.get_q_elem()
+            print 'queue id is ' + str(tq)
+        except:
+            print "Exception : No tasks available"
+            return 
+
+        wid = wm.W.assign('branch',tq[1])               # find a free worker 
+        if(wid):
+            ws = wm.W.get_socket(wid)
+            msg = msg_wsh(ws,tid)
+            print "Sending a msg to show a task to worker " + wid
+            send_task(msg)
+            return
+
+
     def send_msg(self,msg):
         self.write_message(tornado.escape.json_encode(msg))
     
@@ -102,18 +127,21 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         TaskTree.save_results(msg)                       # save results of the task
         TaskTree.wait_for_approval(msg['TID'],msg['WID'])# send msg over socket to wait for approval
         TaskTree.ask_approval(msg['TID'])                # send msg to parent to approve 
-        wm.W.complete(self.workerId,msg['TID'],0.05)    # Payment
+        wm.W.complete(self.workerId,msg['TID'],0.05)     # Payment
 
+        self.shake_tree();                               # Look to match more work and tasks
         #self.send_msg(tm.new_msg(self.workerId,"","idle"),self))#fill in params more completely
+
         print "task callback" 
 
     def select_callback(self,msg):
         wm.W.set_type(self.workerId,msg['preference'])
         self.preference = msg['preference']
         self.send_msg(tmsg.new_msg(mode="idle",WID=self.workerId,TID=""))#fill in params more completely
-        print "select callback"
-
         
+        self.shake_tree();                              # Look to match more work and tasks
+        print "select callback"
+    
     def __init__(self, application, request, **kwargs):
         super(WebSocketHandler, self).__init__(application, request, **kwargs)
         self.workerId = self.get_argument("workerId",None)
@@ -191,12 +219,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             return
         else:
             wm.W.set_socket(self.workerId,self)
-            
         selectmsg = tmsg.new_msg(mode="select",WID=self.workerId,TID="")
         self.send_msg(selectmsg)
         
-        # self.stream.set_nodelay(True) #what's this?
-
     def on_close(self):
         print "Closing socket for" + self.workerId
         wm.W.logout(self.workerId)
