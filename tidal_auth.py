@@ -194,11 +194,13 @@ class wrkLoginHandler(BaseHandler):
         workerId = self.get_argument("workerId",None)
         assignmentId = self.get_argument("assignmentId",None)
         hitId = self.get_argument("hitId",None)
+        turkSubmitTo = self.get_argument("turkSubmitTo",None)
 
         if(ts.LOCAL_TESTING and workerId is None):
             workerId = "TESTWORKERID"
             assignmentId = "TESTASSIGNMENTID"
             hitId = "TESTHITID"
+            turkSubmitTo = "TESTTURKSUBMITTO"
         
         # if(self.request.remote_ip is not AMT_IP):
         #     self.write("not an official request from AMT")
@@ -222,7 +224,8 @@ class wrkLoginHandler(BaseHandler):
             
             self.set_secure_cookie("wrk",workerId,expires_days=None)
             
-            self.redirect(ts.URL_PREFIX+"/hit"+"?workerId="+workerId+"&hitId="+hitId)
+            self.redirect( ts.URL_PREFIX+"/hit"+"?workerId="+workerId+"&hitId="+hitId+
+                           "&turkSubmitTo="+turkSubmitTo+"&assignmentId="+assignmentId )
             #you can add more or less arguments here. You probably don't
             #need anything besides the worker id and the amt_task_id,
             #which you can use to look up info on that amt HIT. I think it's

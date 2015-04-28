@@ -8,7 +8,7 @@
          
          var workerId = "{{workerId}}";
          var ws;
-         var msg;
+         var msg = {"mode":"select"};
          
          var byId = function( id ) {
              return document.getElementById( id );
@@ -34,6 +34,13 @@
              msg.mode = "select";
              msg.preference = preference;
              ws.send(JSON.stringify(msg));
+         }
+
+         function send_logout(){
+             //needs to logout through AMT as well as us.
+             //msg.mode = "logout";
+             //ws.send(JSON.stringify(msg));
+             ws.close();
          }
 
          function gen_branch(){
@@ -137,23 +144,83 @@
              byId('super_child_data_type').innerHTML = msg.super_child_data_type;
          }
 
-         
+         function send_ready(){
+             msg.mode = "ready";
+             ws.send(JSON.stringify(msg));
+         }
+
+         function start_idle_counter(){
+             var start = new Date;
+             setInterval(
+                 function update_idle_counter() {
+                     var diff = (new Date) - start;
+                     if(diff > 3600000)
+                         send_logout();
+                     byId('idle_timer').innerHTML = "You've been idle for "+(diff / 1000) + " Seconds";
+                 }
+                 , 1000);
+         }
+
+         function gen_hud(){
+             byId('hud').innerHTML = "<b>Statistics:</b>" +
+            "Lifetime Tasks Completed: "+        msg.ltc+"<br>"+
+            "Lifetime Money Earned: "+           msg.lme+"<br>"+
+            "Lifetime Time Active: "+            msg.ta+"<br>"+
+            "Lifetime Hourly Rate: "+            msg.hr+"<br>"+
+            "Lifetime Approval Rate: "+          msg.ar+"<br>"+
+            "Branch Points: "+                   msg.bp+"<br>"+
+            "Leaf Points: "+                     msg.lp+"<br>"+
+            "Sap Points: "+                      msg.sp+"<br>"+
+            "Tasks Completed This Session: "+    msg.tcts+"<br>"+
+            "Money Earned This Session: "+       msg.mets+"<br>";
+         }
+
+         function show_hud(){
+             byId('hud').style.display='block';
+             byId('show_hud').style.display='none';
+             byId('hide_hud').style.display='block';
+             hide_all();
+         }
+          
+         function hide_hud(){
+             byId('hud').style.display='none';
+             byId('hide_hud').style.display='none';
+             byId('show_hud').style.display='block';
+             byId(msg.mode).style.display = 'block';
+             byId(msg.mode).style.disabled = false;
+         }
+          
+          
          window.onload = function(){
              var ws_url;
              if("{{local_testing}}" == "True")
                  ws_url = "ws://localhost:{{port}}{{url_prefix}}/websocket?workerId="+"{{workerId}}";
              else
                  ws_url = "wss://crowd.ecn.purdue.edu{{url_prefix}}/websocket?workerId="+"{{workerId}}";
-                 
+
+             byId('hud').style.display = 'none';
+             byId('hide_hud').style.display = 'none';
+             
              ws = new WebSocket(ws_url);
              console.log("Websocket created = "+ws_url);
 
              hide_all();
 
-             
              ws.onmessage = function(event)
              {
+                 var is_idle = (msg.mode == "idle");
                  msg = JSON.parse(event.data);
+
+                 if(is_idle && (msg.mode == "ready")){
+                     var idle_ping = msg;
+                     idle_ping.mode = "idle";
+                     ws.send(JSON.stringify(idle_ping));
+                 }
+                 else if(is_idle){
+                     console.log("another message that was not 'READY' came during an idle state.");
+                     msg.mode = "idle";
+                     return;
+                 }
                  
                  console.log("message = " + event.data);
                  
@@ -162,11 +229,13 @@
                  byId(msg.mode).style.disabled = false;
                  
                  switch(msg.mode){
-                     case "idle":
+                     case "hud": gen_hud();
+                         break;
+                     case "idle": start_idle_counter();
                          break;
                      case "select":
                          break;
-                     case "ready":
+                     case "ready": //stop idle counter & flash
                          break;
                      case "leaf": gen_leaf();
                          break;
@@ -181,7 +250,11 @@
                  }
              }
              ws.onopen = function(evt){}
-             ws.onclose = function(evt){}
+             ws.onclose = function(evt){
+                 msg.mode = "logout";
+                 ws.send(JSON.stringify(msg));
+                 byId("AMT_form").submit();
+             }
              
              ws.onerror = function(evt){
                  console.log("Error = " + evt.data);
@@ -253,11 +326,14 @@
         <div class="mode" id="idle">
             <h2> There are currently no tasks to be done. Please wait until one becomes available 
                 and we'll notify you. In the meantime you will still be compensated at the rate of 
-                $0.01 per hour to be on hold. </h2>
+                $1.20 per hour to be on hold.</h2>
+            <div id="idle_timer"></div>
+            
         </div>
         
         <div class="mode" id="ready">
             <h1>Hey! We found you a task!</h1>
+	    <input type="button" value="I'm ready!" onclick="send_ready()"> </br>
         </div>
         
         <div class="mode" id="branch" >
@@ -331,5 +407,19 @@
         </div>
 
 
+        <div class="hud" id="hud">
+            "Sorry, no statistics right now"
+        </div>
+        
+	<input type="button" value="LOGOUT and COLLECT MONEY" onclick="send_logout()"> </br>
+	<input type="button" id="show_hud" value="Show Stats" onclick="show_hud()"> </br>
+	<input type="button" id="hide_hud" value="Hide Stats" onclick="hide_hud()"> </br>
+        
+        <form action="{{turkSubmitTo}}"" type="hidden" method='POST' id="AMT_form">
+            <input type="hidden" name="hitId" value="{{hitId}}"> 
+            <input type="hidden" name="workerId" value="{{workerId}}">
+            <input type="hidden" name="assignmentId" value="{{assignmentId}}">
+        </form>
+        
     </body>
 
