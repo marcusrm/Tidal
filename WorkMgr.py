@@ -1,33 +1,33 @@
 ## WORKER MANAGER
 
 # Provided Methods:
-# W.add(WID): 		returns a True/False and requires input of Worker ID(WID) as string.
-# W.remove(WID): 	removes the WID from the pool/database. Returns True/False
-# W.login(WID): 	logs in the respective WID. Returns True/False
-# W.logout(WID): 	logs out the respective WID. Returns True/False
-# W.assign(TID,Type): Assigns the Task ID (TID) to a given Type ("leaf","branch","sap").
-# W.print(WID): 	prints all info about worker
+# See WorkMGr_Help.txt for help on using work manager
+# Run W.api() to see all APIs offered
 
-DEVMODE=True
+# Dev inputs
+DEVMODE=True		# RUN STUFF IN SANDBOX
+DUMMYCODE=True		# RUN CODE AT END OF LIBRARY
 
 # Import Required Files
 import tidal_amt as AMT #Using grant_bonus,post_hit,pay_worker
 import sqlite3
 import pickle
-
-
+from Queue import PriorityQueue
 if(DEVMODE):
 	import os,sys
 	os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
-	from pdb import set_trace as brk
+	from pdb import set_trace as brk		# Breakpoint
 	
-# Defining Global Worker Dictionary
+# Defining Global Worker Variables
 w={}				# Worker Dictionary of Objects
 wDBcon={}			# Worker Database Connection Object
+wIdleThres=10		# Idle Time Threshold in minutes
+wIdlePay=0.20		# Idle Time Pay in dollars $$$$
+wTaskPay=0.50		# Pay amount per task $$$$
 
 # Defining Self Contained Class
 class W(object):
-	# Class Attributes
+	# Class Attributes- Lists contain general info about pool 
 	Loffline=[] 	# List of all offline workers
 	Lonline= []		# List of all online workers
 	Lidle=	 []		# List of all online idle workers
@@ -35,21 +35,35 @@ class W(object):
 	Lbranch= []		# List of all online branchers
 	Lsap=	 []		# List of all online sappers
 	
+	# Priority Queues of leafers (priority,WID)
+	LQueue={'branch':PriorityQueue(),'leaf':PriorityQueue(),'sap':PriorityQueue()}
+	
 	# Initialization
 	def __init__(self,WID):
 		self.WID=WID			# Worker ID-> 			WORKER ID
-		self.AID=False			# Assignment ID->		CURRENT AMT ASSIGNMENT ID
-		self.TID='NA'			# NA or assigned TID->	WORKER TASK STATUS
-		self.status='offline' 	# online, offline->    	WORKER STATUS
-		self.type=None			# leaf, sap, branch-> 	WORKER TYPE
-		self.Socket=False		# SockObj or None-> 	WORKER SOCKET OBJECT
-		self.AmountEarned=0 	# Initialize Money Earned
+		self.AID=False			# Assignment ID->		CURRENT AMT ASSIGNMENT ID		# RESET
+		self.TID=False			# NA or assigned TID->	Current TID						# RESET
+		self.status='offline' 	# online, offline->    	WORKER STATUS 					# RESET
+		self.type=None			# leaf, sap, branch-> 	WORKER TYPE						# RESET
+		self.Socket=False		# SockObj or None-> 	WORKER SOCKET OBJECT			# RESET
+		
 		
 		# Profile based information
-		self.TaskPend={}		# {'TID':AmountEarned,...}
-		self.TaskHist=[]		# List of all tasks done
-		self.Pt={'branch':0,'leaf':0,'sap':0} 	# Total Time worke/idled, money earned, tasks done,  
+		self.PtimeIdle		=0	# Idle Time												# RESET
+		self.PtimeActive	=0	# Total Time Spend										# RESET
 		
+		self.PmoneyEarned	=0	# Net money earned
+		self.PmoneyPend		=0	# Pending amount										# RESET
+		
+		self.PtaskDoneCurrent=0	# If Active in current session							# RESET
+		self.PtaskDone		=[]	# List of TIDs completed
+		self.Ptaskapprove	=0	# Total number of approved tasks
+		self.Ptaskreject	=0	# Total number of tasks rejected
+		
+		self.Pbranch		=0	# Number of Branch Tasks Done
+		self.Pleaf			=0	# Number of Leaf   Tasks Done
+		self.Psap			=0	# Number of Sap Tasks Done
+
 	# Add Worker	
 	@staticmethod
 	def add(WID):
@@ -59,10 +73,10 @@ class W(object):
 			w[WID]=W(WID)			# Create Worker Instance
 			W.Loffline.append(WID)	# Add worker to offline list
 			W.DbUpdate(WID)			# Adding Entry To Database
-			print('WrkMgr: WID-'+str(WID)+' Add: Success')
+			print('WrkMgr: Add Success. WID-'+str(WID))
 			return True
 		else:
-			print('WrkMgr: WID-'+str(WID)+' Add Error: Invalid WID or WID already exists')
+			print('WrkMgr: Add Error-Invalid WID or WID already exists. WID-'+str(WID))
 			return False
 		
 	# Remove Worker
@@ -76,22 +90,22 @@ class W(object):
 			if WID in w:
 				W.DbDelete(WID)
 				w.pop(WID,None)		# Remove from dictionary
-				print('WrkMgr: WID-'+str(WID)+' Remove: Success')
+				print('WrkMgr: Remove Success. WID-'+str(WID))
 				return True
 			else: 
-				print('WrkMgr: WID-'+str(WID)+' Remove Error: WID doesn\' exist')
+				print('WrkMgr: Remove Error- WID doesn\' exist. WID-'+str(WID))
 				return False
 		else:
-			print('WrkMgr: WID-'+str(WID)+' Remove Error: Invalid WID')
+			print('WrkMgr: Remove Error- Invalid WID. WID-'+str(WID))
 			return False
 	
 	# Login Worker
 	@staticmethod
-	def login(WID,AID=False,TYPE='leaf',SockObj=False):
+	def login(WID,AID=False,TYPE=None,SockObj=False):
 		global w
 		WID=str(WID)
 		if not(W.check(WID) & W.check(TYPE)):
-			print('WrkMgr: WID-'+str(WID)+' Login Error: Invalid Arguments')
+			print('WrkMgr: Login error: Invalid Arguments. WID-'+str(WID))
 			return False
 		
 		if(AID==False):
@@ -101,7 +115,7 @@ class W(object):
 		try:
 			if (WID in W.Loffline):
 				if(w[WID].status!='offline'): 
-					print('WrkMgr WID-'+str(WID)+' login: worker already online')
+					print('WrkMgr login error: worker already online. WID-'+str(WID))
 					return False
 			
 				# Update Class lists for idle and online workers
@@ -117,25 +131,17 @@ class W(object):
 				
 				# Update specific worker and Class list
 				w[WID].status='online'
-				w[WID].TID='NA'
-				w[WID].type=TYPE
+				w[WID].TID=False
+				w[WID].type=None
 				
-				if TYPE=='sap':	
-					W.Lsap.append(WID)
-				elif TYPE=='branch':	
-					W.Lbranch.append(WID)
-				elif TYPE=='leaf':
-					W.Lleaf.append(WID)
-				else:
-					return False
 				W.DbUpdate(WID)
-				print('WrkMgr: WID-'+str(WID)+' Login Success')
+				print('WrkMgr: Login Success. WID-'+str(WID))
 				return True
 			else:
-				print('WrkMgr: WID-'+	str(WID)+' Login Error: Worker Doesn\' Exist')
+				print('WrkMgr: Login Error. WID Doesn\'t exist. WID-'+str(WID))
 				return False
 		except:
-			print('WrkMgr: WID-'+str(WID)+' Login Error: Unknown Exception')
+			print('WrkMgr: Login Error. Unknown Exception WID-'+str(WID))
 			return False
 
 	# Logout Worker
@@ -146,16 +152,51 @@ class W(object):
 		try:
 			AMT.pay_worker(WID)							# Paying Worker Base HIT Amount
 			# LOG WORKER OUT AMT 
-			AMT.grant_bonus(WID,w[WID].AmountEarned) 
-			w[WID].AmountEarned=0
-			w[WID].status='offline'
-			w[WID].Socket=False
-			W.Lremove(WID)
-			W.DbUpdate(WID)
-			print('WrkMgr: WID-'+str(WID)+' Logout: Success. Amount Paid: '+str(w[WID].AmountEarned))
+			try:
+				AMT.grant_bonus(WID,w[WID].PmoneyPend) 	# Pay pending amount
+			except:
+				print "WrkMgr: logout Error. "+str(WID)+"AMT.grant_bonus error"
+				return False
+				
+			w[WID].PmoneyEarned+=w[WID].PmoneyPend		# Incrementing net amount earned
+			w[WID].PmoneyPend=0							# Clear amount earned
+			w[WID].status='offline'						# Make worker offline
+			w[WID].Socket=False							# Clear Socket
+			W.Lremove(WID)								# Remove From All Lists
+			W.Loffline.append(WID)						# Make Worker Offline
+			W.DbUpdate(WID)								# Update in Database
+			print('WrkMgr: Logout: Success. Amount Paid. WID-'+str(WID) )
 			return True
 		except:
-			print('WrkMgr: WID-'+str(WID)+' Logout Error: AMT Not Paid. Not Logged Out')			
+			print('WrkMgr: Logout Error. Amount Not Paid. Not Logged Out. WID-'+str(WID))
+			return False
+			
+	# Update Current IDLE Time
+	@staticmethod
+	def addIdleTime(WID,TimeIdle=0):
+		global wIdleThres, wIdlePay
+		try:
+			w[WID].PtimeIdle+=TimeIdle								# Incrementing Idle Time [minutes]
+			
+			# Pay only if idle greater than threshold and atleast one task done in current session
+			if(w[WID].PtimeIdle>wIdleThres and PtaskDoneCurrent>0):	
+				w[WID].PmoneyPend+=wIdlePay							# Increment worker's amount
+				w[WID].PtimeIdle=0									# Reset Idle counter back to zero
+			return True
+		
+		except:
+			print ("WrkMgr: addIdleTime Error. WID-"+str(WID))
+			return False
+			
+	# Update Active Time
+	@staticmethod
+	def addActiveTime(WID,TimeActive=0):
+		try:
+			[WID].PtimeActive+=TimeActive
+			return True 
+		except:
+			print ("WrkMgr: addActiveTime Error. WID-"+str(WID))
+			return False
 			
 	# Assign Task to Worker
 	@staticmethod
@@ -166,59 +207,100 @@ class W(object):
 
 		# Remove worker from Idle List
 		try:
-			# Returns required idle worker of requested type
-			if TYPE=='branch':
-				WID_list=list(set(W.Lidle) & set(W.Lbranch))
-				WID_List_branch=WID_LIST
-			elif TYPE=='leaf':
-				WID_list=list(set(W.Lidle) & set(W.Lleaf))
-			elif TYPE=='sap':
-				WID_list=list(set(W.Lidle) & set(W.Lsap))
-				
-			# Check if specific workers available
-			if len(WID_list)>0:		
-				WIDassign=WID_list[0]
-				W.Lidle.remove(WIDassign)
-				w[WIDassign].TID=TID
-				W.DbUpdate(WID)
-				return WIDassign
-				
-			# If leaf task required and no leafers present, assign brancher
-			elif len(WID_list_branch)>0:	
-				WIDassign=WID_list_branch[0]
-				W.Lidle.remove(WIDassign)
-				w[WIDassign].TID=TID
-				W.DbUpdate(WID)
-				return WIDassign			# Returning Brancher
-			else:
+			# Get an idle worker 
+			WIDassign=W.LQPop(TYPE=TYPE)
+			
+			# If no leafer available, return idle brancher
+			if WIDassign==False and TYPE=='leaf':
+				WIDassign=W.LQpop(TYPE='branch')
+			
+			# Check if Worker Returned
+			if WIDassign==False:
+				print("WrkMgr: assign warning. no free worker available")
 				return False
+			
+			W.Lidle.remove(WIDassign)
+			w[WIDassign].TID=TID
+			W.DbUpdate(WID)
+			return WIDassign
 		except:
-			print('WM '+str(WID)+' assign task: Assignment Error')
+			print('WrkMgr: worker assign error. TID-'+str(TID))
 			return False
 
 	# Assign Task to Worker
 	@staticmethod
-	def complete(WID,TID,AmountPay=0):
+	def complete(WID,Accepted=True,AmountPay=wTaskPay):
 		global w
 		WID=str(WID)
 		
-		# Add worker to Idle List
+		# Add worker back to Idle List
 		try:
-			w[WID].TaskHist.append(w[WID].TID);				  # Save Task History of worker
-			w[WID].TID='NA'									  # Set worker object attributes
-			w[WID].AmountEarned=AmountPay+w[WID].AmountEarned # Adding to the worker's earned amount
+			w[WID].PtaskDone.append(w[WID].TID);			# Save Task History of worker
+			w[WID].TID=False								# Set worker object attributes
+			w[WID].PmoneyPend=AmountPay+w[WID].PmoneyPend 	# Adding to the worker's current earned amount
+			w[WID].PtaskDoneCurrent+=1						# Incrementing the number of tasks they've done 
 			if WID not in W.Lidle:
-				W.Lidle.append(WID)							  # Add to idle list
-				W.DbUpdate(WID)
+				W.Lidle.append(WID)							# Add to idle list
+				W.DbUpdate(WID)								# Update to database
+				W.LQpush(WID)								# Push worker back into Priority Queue
 				return True
 		except:
+			print('WrkMgr: worker Complete error. Error reporting task completion. WID-'+str(WID))
 			return False
-		
-	# Add Task Pending Approval to Worker
+
+	# Return Current Task ID
 	@staticmethod
-	def pending(WID,TID,AmountPay=0):
-		W.DbUpdate(WID)
-		pass
+	def get_TID(WID):
+		return w[WID].TID
+		
+	# To Set Worker Type='leaf','branch','sap'
+	@staticmethod
+	def set_type(WID,TYPE):
+		global w
+	
+		# Remove Worker from previous lists. Do first, ask later!! =)
+		try:
+			W.Lleaf.remove(WID);
+		except:
+			try:	
+				W.Lbranch.remove(WID);
+			except: 	
+				try:	W.Lsap.remove(WID);
+				except: pass
+
+		try:
+			if TYPE=='sap':	
+				W.Lsap.append(WID)				
+			elif TYPE=='branch':	
+				W.Lbranch.append(WID)
+			elif TYPE=='leaf':
+				W.Lleaf.append(WID)
+			else:
+				return False
+			
+			# Set Worker Type 
+			w[WID].type=TYPE	
+			
+			# Push Worker Into Queue
+			W.LQpush(WID)		
+			
+			# Update in Database
+			W.DbUpdate(WID)
+			print('WrkMgr: set_type: Successfully changed. WID-'+str(WID))
+			return True
+		except:
+			print('WrkMgr: set_type Error: Unknown Exception. WID-'+str(WID))
+			return False
+	
+	# Returns Worker Type
+	@staticmethod
+	def get_type(WID):
+		global w
+		try:
+			return w[WID].type
+		except:
+			print('WrkMgr: get_type Error- Worker Doesn\'t Exist')
+			return False
 
 	# To store socket object to worker
 	@staticmethod
@@ -237,29 +319,6 @@ class W(object):
 		global w
 		return w[WID].Socket
 	
-	# To Set Worker Type='leaf','branch','sap'
-	@staticmethod
-	def set_type(WID,TYPE='leaf'):
-		global w
-		try:
-			w[WID].type=TYPE
-			W.DbUpdate(WID)
-			print('WrkMgr: WID-'+str(WID)+' set_type: Success')
-			return True
-		except:
-			print('WrkMgr: WID-'+str(WID)+' set_type Error: Worker Doesn\'t Exist')
-			return False
-	
-	# Returns Worker Type
-	@staticmethod
-	def get_type(WID):
-		global w
-		try:
-			return w[WID].type
-		except:
-			print('WrkMgr: WID-'+str(WID)+' get_type Error: Worker Doesn\'t Exist')
-			return False
-		
 	# Initialize Database & 'w' dictionary
 	@staticmethod
 	def WMinit(WipeDB=False,Sandbox=DEVMODE):
@@ -294,9 +353,20 @@ class W(object):
 			cmd='select * from WM'
 			for row in wDBcon.execute(cmd):
 				w[str(row[0])]=pickle.loads(row[1])
+				# Resetting a few fields
+				w[str(row[0])].AID				=False		# Assignment ID->		CURRENT AMT ASSIGNMENT ID
+				w[str(row[0])].TID				=False		# NA or assigned TID->	Current TID				
+				w[str(row[0])].status			='offline' 	# online, offline->    	WORKER STATUS 			
+				w[str(row[0])].type				=None		# leaf, sap, branch-> 	WORKER TYPE				
+				w[str(row[0])].Socket			=False		# SockObj or None-> 	WORKER SOCKET OBJECT	
+				w[str(row[0])].PtimeIdle		=0			# Idle Time										
+				w[str(row[0])].PtimeActive		=0			# Total Time Spend								
+				w[str(row[0])].PmoneyPend		=0			# Pending amount								
+				w[str(row[0])].PtaskDoneCurrent	=0			# If Active in current session					
 			
 			# Check and add 'admin' entry into DB
 			if 'admin' not in w:
+				print('WrkMgr: Initialising Adding admin')
 				W.add('admin')
 			
 			# Make all Users Offline
@@ -343,7 +413,71 @@ class W(object):
 		if WID in w:
 			cmd='delete from WM where WID=?'
 			wDBcon.execute(cmd,(WID,))
-
+			
+	# Priority Queue for Worker Task Deployment- Push Worker to Queue
+	@staticmethod
+	def LQpush(WID):
+		# Get worker type
+		TYPE=w[WID].type
+	
+		# Check if worker type set
+		if TYPE==None:
+			print('WrkMgr: LQpush error. '+str(WID)+' type not set')
+			return False
+	
+		# Calculate Priority for Workers [PRIORITY CALCULATION OF WORKERS]
+		if TYPE=='leaf':
+			priority=w[WID].Pleaf
+		elif TYPE=='branch':
+			priority=w[WID].Pbranch
+		elif TYPE=='sap':
+			priority=w[WID].Psap
+		else:
+			print("WrkMgr: LQpush Error. Error pushing "+str(WID)+" into priority queue")
+			return False
+		
+		
+		# Push the worker along with the priority to the Q
+		try:
+			W.LQueue[TYPE].put_nowait((-priority,WID))		# Note: '-'ve sign. Lower #=Higher Priority
+			return True
+		except:
+			return False
+		
+	# Priority Queue for Worker Task Deployment- Return from Queue
+	@staticmethod
+	def LQPop(TYPE):
+		# Getting data back from queue
+		try:
+			while(not W.LQueue[TYPE].empty()):		# Check if Q empty
+				wid=W.LQueue[TYPE].get_nowait()	# Check Pop the queue
+				wid=str(wid[1])					
+				if W.Lidle.__contains__(wid) and w[wid].type==TYPE:	# See if popped worker is idle & of same type
+					return wid
+			return False
+		except:
+			print('WrkMgr Qpop Error: unknown exception with priority queue')
+	
+	# Return Data to the worker's console dashboard
+	@staticmethod
+	def getHUD(WID):
+		try:	HourlyRate=w[WID].PtimeActive/w[WID].PmoneyEarned
+		except ZeroDivisionError: HourlyRate=0
+		
+		try:	TaskApprRate=w[WID].Ptaskapprove/len(w[WID].PtaskDone)
+		except ZeroDivisionError: TaskApprRate='NA'
+		
+		msg={
+		'ThisSessionEarned'		:w[WID].PmoneyPend,
+		'ThisSessionTasks'		:w[WID].PtaskDoneCurrent,
+		'OverallEarned'			:w[WID].PmoneyEarned,
+		'OverallBranchTasks'	:w[WID].Pbranch,
+		'OverallLeafTasks'		:w[WID].Pleaf,
+		'OverallSapTasks'		:w[WID].Psap,
+		'OverallHourlyRate'		:HourlyRate,
+		'OverallApprovalRate'	:TaskApprRate}
+		return msg
+			
 	# Check if Worker Exists In Database
 	@staticmethod
 	def WIDexist(WID):
@@ -362,20 +496,24 @@ class W(object):
 	@staticmethod
 	def Lremove(WID):
 		if W.check(WID):
-			if WID in W.Lidle:
-				W.Lidle.remove(WID)
-			if WID in W.Lonline:
-				W.Lonline.remove(WID)
-			if WID in W.Lbranch:
-				W.Lbranch.remove(WID)
-			if WID in W.Lsap:
-				W.Lsap.remove(WID)
-			if WID in W.Lleaf:
-				W.Lleaf.remove(WID)
-			if WID not in W.Loffline:
-				W.Loffline.append(WID);
-			w[WID].type=None
-	
+			try: W.Lidle.remove(WID);
+			except:	pass
+			
+			try: W.Lonline.remove(WID);
+			except:	pass
+			
+			try: W.Lbranch.remove(WID);
+			except: pass
+			
+			try: W.Lsap.remove(WID);
+			except: pass
+			
+			try: W.Lleaf.remove(WID);
+			except: pass
+			
+			try: W.Loffline.remove(WID);
+			except: pass
+			
 	# To display details of worker
 	@staticmethod
 	def disp(WID):
@@ -383,12 +521,12 @@ class W(object):
 		print('Status: '+str(w[WID].status))
 		print('TID: '+str(w[WID].TID))
 		print('Type:'+str(w[WID].type))
-		print('Task History:'+str(w[WID].TaskHist))
+		print('Task History:'+str(w[WID].PtaskDone))
 		print('SocketID:'+str(w[WID].Socket))
 		print('Profile Points:')
-		print('    Branch:'+str(w[WID].Pt['branch']))
-		print('    Leaf:  '+str(w[WID].Pt['leaf']))
-		print('    Sap:   '+str(w[WID].Pt['sap'])+'\n\n')
+		print('    Branch:'+str(w[WID].Pbranch))
+		print('    Leaf:  '+str(w[WID].Pleaf))
+		print('    Sap:   '+str(w[WID].Psap)+'\n\n')
 		
 	# To display List Content
 	@staticmethod
@@ -419,16 +557,30 @@ class W(object):
 		
 	# List All Class Methods and Attributes
 	@staticmethod
-	def APIs():
-		a=[a for a in dir(W) if not(a.startswith('__') and a.endswith('__'))]
-		for x in a:
+	def api():
+		try:
+			a=[a for a in dir(W) if not(a.startswith('__') and a.endswith('__'))]
 			print(a)
-	
-##########################################################################
+		except:
+			print("WrkMgr APIs: Unknown Error")
+
+#################### INITIALIZE THE WORK MANAGER ##########################
 W.WMinit()		# Automatically adds the 'admin' to pool
-'''if(DEVMODE==True):
-	for i in xrange(6):
-		W.add(str(i))
-		if i%3==0:
-			W.login(str(i),'AID:'+str(i))
-			'''
+
+
+#################### DEVELOPER SPACE ######################################
+if(DEVMODE==True and DUMMYCODE==True):			# Add Dummy Workers To Pool
+	type=['leaf','branch','sap']
+	for i in xrange(10):
+		#W.add(str(i))
+		if i%2==0:
+			WID=str(i)
+			W.login(WID,'AID')
+			W.set_type(WID,type[i%5%3])	# Random Worker Type
+
+	print("\n"*10)
+	W.displ()
+	
+	Assigned=W.assign('leaf','tid'); print('Worker Assigned= '+str(Assigned))
+	brk()
+	W.complete(Assigned,'TID',0)
