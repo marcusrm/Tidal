@@ -3,7 +3,6 @@
     <head>
         <title>Task Page</title>
         <script src="https://code.jquery.com/jquery.min.js"></script>
-        <!-- <script src="/static/hit_script.js" type="text/javascript"></script> -->
         
         <script  type="text/javascript">
          
@@ -160,8 +159,8 @@
                  console.log("message = " + event.data);
                  
                  hide_all();
-                 //byId(msg.mode).style.display = 'block';
-                 //byId(msg.mode).style.disabled = false;
+                 byId(msg.mode).style.display = 'block';
+                 byId(msg.mode).style.disabled = false;
                  
                  switch(msg.mode){
                      case "idle":
@@ -250,7 +249,7 @@
 	    <input type="button" value="Branch" onclick="send_select('branch')"> </br>
 	    <input type="button" value="Leaf" onclick="send_select('leaf')"> </br>
 	    <input type="button" value="Sap" onclick="send_select('sap')"> </br>
-	    <input type="button" value="Super" onclick="send_select('super')"> </br>
+
         </div>
         
         <div class="mode" id="idle">

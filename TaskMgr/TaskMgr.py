@@ -110,7 +110,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def select_callback(self,msg):
         wm.W.set_type(self.workerId,msg['preference'])
         self.preference = msg['preference']
-        self.send_msg(tmsg.new_msg(self.workerId,"","idle"))#fill in params more completely
+        self.send_msg(tmsg.new_msg(mode="idle",WID=self.workerId,TID=""))#fill in params more completely
         print "select callback"
 
         
@@ -182,7 +182,6 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         # S1. Store task's results 
         if(self.callback[msg['mode']] is not None):
             self.callback[msg['mode']](msg)
-        #
             
 
     def open(self): # args contains the argument of the forms
@@ -193,7 +192,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         else:
             wm.W.set_socket(self.workerId,self)
             
-        selectmsg = tmsg.new_msg(mode="select",WID=self.workerId,TID=TaskTree.get_maintask())
+        selectmsg = tmsg.new_msg(mode="select",WID=self.workerId,TID="")
         self.send_msg(selectmsg)
         
         # self.stream.set_nodelay(True) #what's this?
