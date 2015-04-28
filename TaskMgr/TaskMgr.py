@@ -19,6 +19,7 @@ import tidal_settings as ts
 import tidal_auth as ta
 import tidal_msg  as tm
 import WorkMgr as wm
+import tidal_msg as tmsg
 from datetime import datetime
 
 
@@ -27,7 +28,7 @@ TaskTree = Tree()
 #NOTE! when task can't find anything it should return
 #a blank object with a TYPE of "idle"
 def task_to_msg(task):
-    msg = new_msg()
+    msg = tmsg.new_msg()
     msg['mode'] = task.type
     msg['WID'] = self.workerId
     msg['TID'] = task.TID
@@ -109,7 +110,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def select_callback(self,msg):
         wm.W.set_type(self.workerId,msg['preference'])
         self.preference = msg['preference']
-        self.send_msg(new_msg(self.workerId,"","idle"))#fill in params more completely
+        self.send_msg(tmsg.new_msg(mode="idle",WID=self.workerId,TID=""))#fill in params more completely
         print "select callback"
 
         
@@ -122,6 +123,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                          "branch" : self.task_callback,
                          "leaf" : self.task_callback,
                          "sap" : self.task_callback,
+                         "super" : self.task_callback,
                      }
         self.time_stamp = datetime.utcnow()
         self.preference = ""
@@ -180,7 +182,6 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         # S1. Store task's results 
         if(self.callback[msg['mode']] is not None):
             self.callback[msg['mode']](msg)
-        #
             
 
     def open(self): # args contains the argument of the forms
@@ -191,7 +192,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         else:
             wm.W.set_socket(self.workerId,self)
             
-        selectmsg = tm.new_msg(mode="select",WID=self.workerId,TID=TaskTree.get_maintask())
+        selectmsg = tmsg.new_msg(mode="select",WID=self.workerId,TID="")
         self.send_msg(selectmsg)
         
         # self.stream.set_nodelay(True) #what's this?
