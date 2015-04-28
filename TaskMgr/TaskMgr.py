@@ -17,7 +17,7 @@ import sys
 sys.path.append('../')
 import tidal_settings as ts
 import tidal_auth as ta
-import tidal_msg  as tm
+import tidal_amt as t_amt
 import WorkMgr as wm
 import tidal_msg as tmsg
 from datetime import datetime
@@ -46,11 +46,11 @@ def task_to_msg(task):
             
     return msg
 
-def msg_wsh(self,msg,wsh):
-    msg['WID'] = self.workerId
-    msg['preference'] = self.preference
-    msg['time_start'] = self.time_stamp
-    msg['profile'] = self.profile
+def msg_wsh(msg,wsh):
+    msg['WID'] = wsh.workerId
+    msg['preference'] = wsh.preference
+    msg['time_start'] = wsh.time_stamp
+    msg['profile'] = wsh.profile
     return msg
 
 class hitHandler(ta.BaseHandler):
@@ -60,16 +60,20 @@ class hitHandler(ta.BaseHandler):
 
         TaskTree.add_node(tid);
         workerId = self.get_argument("workerId",None)
-        print "Shr:WID = " + workerId + " TID = " + tid
-        # assignmentId = self.get_argument("assignmentId",None)
-        # hitId = self.get_argument("hitId",None)
+        assignmentId = self.get_argument("assignmentId",None)
+        hitId = self.get_argument("hitId",None)
+        turkSubmitTo = self.get_argument("turkSubmitTo",None)
         
-        if( workerId is None ):
-            self.write("some bad stuff happened on the way to hit page.")
+        if( workerId is None or hitId is None or assignmentId is
+            None or turkSubmitTo is None ):
+            self.write("some bad stuff happened on the way to the hit page.")
             self.render("404.html")
             return
             
         self.render("hit.html",workerId=workerId,
+                    assignmentId=assignmentId,
+                    hitId=hitId,
+                    turkSubmitTo=turkSubmitTo+"/mturk/externalSubmit",
                     url_prefix=ts.URL_PREFIX,
                     port=ts.PORT,
                     local_testing=ts.LOCAL_TESTING)
@@ -82,23 +86,34 @@ class hitHandler(ta.BaseHandler):
 
 def send_task(msg):
     socket = wm.W.get_socket(msg['WID'])
-    socket.send_msg(msg)
+    socket.send_msg(msg_wsh(msg,socket))
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
     def send_msg(self,msg):
         self.write_message(tornado.escape.json_encode(msg))
-    
-    def idle_callback(self,msg):
-        #remove worker from idle list #NJ
-        print "idle callback" #???
+
+    def logout_callback(self,msg):
+        self.close()
         
-    def ready_callback(self,msg): #NJ help 
+    def idle_callback(self,msg):
+        #waiting on API
+        #min = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
+        #print "adding idle min:", min
+        #wm.W.addIdleTime(self.workerId,min)
+        print "idle callback"
+        
+    def ready_callback(self,msg):
+        #tree.release_ready_TID(msg.TID);
         #assign pre-fetched task 
         #send msg back
         print "ready callback" #???
 
     def task_callback(self,msg):
+        #waiting on API
+        #min = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
+        #print "adding active min:", min
+        #wm.W.addActiveTime(self.workerId,min)
         TaskTree.save_results(msg)                       # save results of the task
         TaskTree.wait_for_approval(msg['TID'],msg['WID'])# send msg over socket to wait for approval
         TaskTree.ask_approval(msg['TID'])                # send msg to parent to approve 
@@ -111,12 +126,14 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         wm.W.set_type(self.workerId,msg['preference'])
         self.preference = msg['preference']
         self.send_msg(tmsg.new_msg(mode="idle",WID=self.workerId,TID=""))#fill in params more completely
+        
         print "select callback"
 
         
     def __init__(self, application, request, **kwargs):
         super(WebSocketHandler, self).__init__(application, request, **kwargs)
         self.workerId = self.get_argument("workerId",None)
+        self.assignmentId = self.get_argument("assignmentId",None)
         self.callback = {"select" : self.select_callback,
                          "idle" : self.idle_callback,
                          "ready" : self.ready_callback,
@@ -124,6 +141,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                          "leaf" : self.task_callback,
                          "sap" : self.task_callback,
                          "super" : self.task_callback,
+                         "logout": self.logout_callback,
                      }
         self.time_stamp = datetime.utcnow()
         self.preference = ""
@@ -194,10 +212,19 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             
         selectmsg = tmsg.new_msg(mode="select",WID=self.workerId,TID="")
         self.send_msg(selectmsg)
-        
-        # self.stream.set_nodelay(True) #what's this?
 
     def on_close(self):
         print "Closing socket for" + self.workerId
+        #WAITING ON API
+        # TID = wm.W.getTID(self.workerId)
+        # print "aborting task: ",TID
+        # tree.abort_task(TID)
+        
+        #self.send_msg(tmsg.new_msg(mode="logout",WID=self.workerId,TID=""));
+        
+        #BUSY WAIT FOR AMT TO RESPOND.
+        while(t_amt.get_assignment(self.assignmentId).assignment_status != "Submitted"):
+            sleep(1);
+    
         wm.W.logout(self.workerId)
 
