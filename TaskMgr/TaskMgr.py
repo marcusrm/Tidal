@@ -19,6 +19,7 @@ import tidal_settings as ts
 import tidal_auth as ta
 import tidal_msg  as tm
 import WorkMgr as wm
+import tidal_msg as tmsg
 from datetime import datetime
 
 
@@ -109,7 +110,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def select_callback(self,msg):
         wm.W.set_type(self.workerId,msg['preference'])
         self.preference = msg['preference']
-        self.send_msg(new_msg(self.workerId,"","idle"))#fill in params more completely
+        self.send_msg(tmsg.new_msg(self.workerId,"","idle"))#fill in params more completely
         print "select callback"
 
         
@@ -122,6 +123,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                          "branch" : self.task_callback,
                          "leaf" : self.task_callback,
                          "sap" : self.task_callback,
+                         "super" : self.task_callback,
                      }
         self.time_stamp = datetime.utcnow()
         self.preference = ""

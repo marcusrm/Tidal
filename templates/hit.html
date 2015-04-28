@@ -98,8 +98,8 @@
              insert_sap_insn_html();
              var num = msg.sap_task.length;
              for(i=0; i<num;i++){
-                 byId("sap_task"+i).innerHTML = msg.sap_task[i];
-                 byId("sap_work"+i).innerHTML = msg.sap_work[i];
+                 byId("sap_task"+i).innerHTML += msg.sap_task[i];
+                 byId("sap_work"+i).innerHTML += msg.sap_work[i];
              }
 
          }
@@ -114,6 +114,32 @@
              }
              ws.send(JSON.stringify(msg));
          }
+
+         
+         function send_super() {
+             msg.mode = "super";
+             msg.super_approve = byId('super_approve').checked;
+             msg.super_feedback = byId('super_feedback').value;
+             ws.send(JSON.stringify(msg));
+         }
+         
+         function gen_super() {
+             if(msg.super_child_data_type == "leaf"){
+                 byId('super_child_data').innerHTML = msg.super_child_data;
+             }
+             else{
+                 for(i=0; i<msg.super_child_data.length;i++){
+                     byId('super_child_data').innerHTML += "Branch: " + i + ", predicted type: "  + msg.super_child_data_pred[i] + "<br> Instructions: <br>" + msg.super_child_data[i] + "<br><br>";
+                 }               
+             }
+
+             var num = msg.super_child_num;
+             byId('super_child_num').innerHTML = num;
+             byId('super_branch_data').innerHTML = msg.branch_data[num];
+             byId('super_branch_data_type').innerHTML = msg.branch_data_type[num];
+             byId('super_child_data_type').innerHTML = msg.super_child_data_type;
+         }
+
          
          window.onload = function(){
              var ws_url;
@@ -151,6 +177,8 @@
                          break;
                      case "sap": gen_sap();
                          break;
+                     case "super": gen_super();
+                         break;
                      default:
                          error();
                  }
@@ -164,14 +192,13 @@
 
          };
 
-
-         function insert_tasks_html()
+         function insert_branch_tasks_html()
          {
              var num = byId('branchnum').value;
              byId('BranchBranchForm').innerHTML ="";
              for(i=0; i<num;i++){
 		 var html = 
-		 "<div id='taskarea"+i+"' style='clear:both;'> \
+		 "<div id='branch_taskarea"+i+"' style='clear:both;'> \
                                           <label><b>SubTask Instructions</b> </label>\
                                           <textarea name='branch_task"+i+"' id='branch_task"+i+"' class='box' type='text' placeholder='Leaf Task Space' maxlength='500'\
                                                     style='width:350px; height:150px; float:left' required> </textarea>\
@@ -179,7 +206,7 @@
                                           <input name='Task"+i+"Pred' type='radio'  value='branchnext'>Branched into subtasks by further by another worker<br>\
                                           <input name='Task"+i+"Pred' type='radio'  value='leafnext'> Completed by a single worker\
 </br >\
-      </div>"
+      </div>";
                  byId('BranchBranchForm').innerHTML += html;
              }
          }
@@ -198,14 +225,14 @@
              else
              {
                  var  html = "<label>Number of Branches</label>\
-      <select id='branchnum' onchange='insert_tasks_html()'>\
+      <select id='branchnum' onchange='insert_branch_tasks_html()'>\
         <option value='2'>2</option>\
         <option value='3'>3</option>\
         <option value='4'>4</option>\
         <option value='5'>5</option>\
       </select><br>";
                  byId('BranchSelect').innerHTML = html;
-                 insert_tasks_html();
+                 insert_branch_tasks_html();
                  byId("BranchLeafForm").innerHTML ="";
                  byId("SubmitBranch").value ="Post Branches as HITs";
              }
@@ -224,6 +251,7 @@
 	    <input type="button" value="Branch" onclick="send_select('branch')"> </br>
 	    <input type="button" value="Leaf" onclick="send_select('leaf')"> </br>
 	    <input type="button" value="Sap" onclick="send_select('sap')"> </br>
+	    <input type="button" value="Super" onclick="send_select('super')"> </br>
         </div>
         
         <div class="mode" id="idle">
@@ -276,8 +304,6 @@
         
         <div class ="mode" id="sap">
             <form name="SapForm" method="post" onsubmit="send_sap()" action="javascript:void(0);">
-	        <script type="text/javascript">
-	        </script>
 	        <input name="parent" id="parent" type="hidden" value = "1"><!-- what's this? -->
 	        <fieldset>
 	            <div id="SapForm">
@@ -288,6 +314,25 @@
             </form>
         </div>
 
+        
+        <div class ="mode" id="super">
+            <form name="SuperForm" method="post" onsubmit="send_super()" action="javascript:void(0);">
+                <b>Results of Worker Who Accepted Your Subtask #
+                <label id='super_child_num'></label> :</b> <br>
+                Your Instructions: <label id='super_branch_data'></label> <br>
+                You predicted this would be a <label id='super_branch_data_type' style="color:red"></label> type node.<br>
+                The worker completed it as a <label id="super_child_data_type" style="color:red"></label> type node. <br><br>
+                The worker response: <br><label id="super_child_data"></label>
+                <label class='field'><br>Approved </label>
+                <input name='super_approve' id='super_approve' type='checkbox' default='unchecked' value='Approved'></br >
+                <textarea name='super_feedback' id='super_feedback' class='box' type='text' placeholder='Feedback' maxlength='500' style='width:350px; height:150px; float:left' required> </textarea>
+                
+	            <input type="submit" style='clear:both;float:left' value="Submit Supervision" id="SubmitSuper"> </br>
+                <br>
+                
+
+            </form>
+        </div>
 
 
     </body>
