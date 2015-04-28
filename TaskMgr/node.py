@@ -36,7 +36,6 @@ class Node:
 		if self.__parent is not None:
 			return self.__parent
 
-	@property
 	def msg(self):
 		return self.__msg
 
