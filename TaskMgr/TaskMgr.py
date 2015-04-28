@@ -17,49 +17,50 @@ sys.path.append('../')
 import tidal_settings as ts
 import tidal_auth as ta
 import WorkMgr as wm
+import tidal_msg as tmsg
 from datetime import datetime
 
 
 TaskTree = Tree()
 
-def new_msg(mode="", WID="", TID="", profile={}):
+# def new_msg(mode="", WID="", TID="", profile={}):
 
-    msg = {
-        #header info
-        'mode' : mode, #idle,ready,leaf,branch,sap,select
-        'WID' : WID,
-        'TID' : TID,
+#     msg = {
+#         #header info
+#         'mode' : mode, #idle,ready,leaf,branch,sap,select
+#         'WID' : WID,
+#         'TID' : TID,
         
-        'preference' : "", #leaf/branch/sap
-        'time_start' : None,
-        'profile' : profile,
+#         'preference' : "", #leaf/branch/sap
+#         'time_start' : None,
+#         'profile' : profile,
 
-        #branch info
-        'branch_task' : "", #instructions
-        'branch_data' : [], #worker results for each new branch
-        'branch_data_type' : [], #is each result a leaf or a branch
+#         #branch info
+#         'branch_task' : "", #instructions
+#         'branch_data' : [], #worker results for each new branch
+#         'branch_data_type' : [], #is each result a leaf or a branch
 
-        #super
-        'super_mode':"",      #pending,approved
-        'super_task': [],      #instructions of branches of children
-        'super_task_ids': [],      #TIDs of child branch task nodes
-        'super_approve': [],    #True/false approve or reject child branches
-        'super_data':[],         #reasons for rejection or approval (optional)
+#         #super
+#         'super_mode':"",      #pending,approved
+#         'super_task': [],      #instructions of branches of children
+#         'super_task_ids': [],      #TIDs of child branch task nodes
+#         'super_approve': [],    #True/false approve or reject child branches
+#         'super_data':[],         #reasons for rejection or approval (optional)
 
-        #leaf info
-        'leaf_task' : "", #instructions 
-        'leaf_data' : "", #worker results
+#         #leaf info
+#         'leaf_task' : "", #instructions 
+#         'leaf_data' : "", #worker results
 
-        #sap info
-        'sap_task' : [], #instructions (solutions from each TID)
-        'sap_task_ids' : [], #matching TIDs for the instructions
-        'sap_work' : [], #worker results
-        'sap_data' : "", #sapper results 
-        'sap_rating' : [], #rates 
-        'sap_reject' : [] #returns unsatisfactory taskids
-    }
+#         #sap info
+#         'sap_task' : [], #instructions (solutions from each TID)
+#         'sap_task_ids' : [], #matching TIDs for the instructions
+#         'sap_work' : [], #worker results
+#         'sap_data' : "", #sapper results 
+#         'sap_rating' : [], #rates 
+#         'sap_reject' : [] #returns unsatisfactory taskids
+#     }
 
-    return msg
+#     return msg
 
     
 #NOTE! when task can't find anything it should return
@@ -131,15 +132,16 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         print "ready callback" #???
 
     def task_callback(self,msg):
+        print "MESSAGE",msg
         TaskTree.save_results(msg_to_task(msg))
         wm.W.complete(self.workerId,msg['TID'],0.05)
-        self.send_msg(msg_wsh(new_msg(self.workerId,"","idle"),self))#fill in params more completely
+        self.send_msg(msg_wsh(tmsg.new_msg(self.workerId,"","idle"),self))#fill in params more completely
         print "task callback" 
 
     def select_callback(self,msg):
         wm.W.set_type(self.workerId,msg['preference'])
         self.preference = msg['preference']
-        self.send_msg(new_msg(self.workerId,"","idle"))#fill in params more completely
+        self.send_msg(tmsg.new_msg(self.workerId,"","idle"))#fill in params more completely
         print "select callback"
 
         
@@ -152,6 +154,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                          "branch" : self.task_callback,
                          "leaf" : self.task_callback,
                          "sap" : self.task_callback,
+                         "super" : self.task_callback,
                      }
         self.time_stamp = datetime.utcnow()
         self.preference = ""
@@ -217,7 +220,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         else:
             wm.W.set_socket(self.workerId,self)
             
-        selectmsg = new_msg(self.workerId,"","select")
+        selectmsg = tmsg.new_msg(self.workerId,"","select")
         self.send_msg(selectmsg)
         
         # self.stream.set_nodelay(True) #what's this?
