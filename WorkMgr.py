@@ -5,8 +5,8 @@
 # Run W.api() to see all APIs offered
 
 # Dev inputs
-DEVMODE=False		# RUN STUFF IN SANDBOX
-DUMMYCODE=False		# RUN CODE AT END OF LIBRARY
+DEVMODE=True		# RUN STUFF IN SANDBOX
+DUMMYCODE=True		# RUN CODE AT END OF LIBRARY
 
 # Import Required Files
 import tidal_amt as AMT #Using grant_bonus,post_hit,pay_worker
@@ -239,16 +239,16 @@ class W(object):
 		try:
 			# Task History Based
 			w[WID].PtaskDone.append(w[WID].TID);			# Save Task History of worker
-			self.PtaskDoneCurrent+=1						# Incremement tasks done in  current session
+			w[WID].PtaskDoneCurrent+=1						# Incremement tasks done in  current session
 			w[WID].TID=False								# Reset TID label for worker
 			
 			# Acceptance/Rejection
 			if TaskAccepted:
 				w[WID].Ptaskapprove	+=1						# Increment worker's total number of approved tasks
-				self.PmoneyPend		+=W.wTaskPay				# Increment current pay session
+				w[WID].PmoneyPend		+=W.wTaskPay				# Increment current pay session
 			else:
-				self.Ptaskreject	+=1						# Increment worker's total number of rejected tasks
-				
+				w[WID].Ptaskreject	+=1						# Increment worker's total number of rejected tasks
+		
 			# Add Worker to Priority Lists and Idle Lists
 			if WID not in W.Lidle:
 				W.Lidle.append(WID)							# Add to idle list
@@ -259,8 +259,7 @@ class W(object):
 		except:
 			print('WrkMgr: worker Complete error. Error reporting task completion. WID-'+str(WID))
 			return False
-
-			
+	
 	# Return Current Task ID
 	@staticmethod
 	def get_TID(WID):
@@ -587,4 +586,7 @@ if(DEVMODE==True and DUMMYCODE==True):			# Add Dummy Workers To Pool
 	W.add('0');	W.add('1'); W.add('2');
 	W.login('1','aid1'); W.login('2','aid2');
 	W.set_type('1','leaf'); W.set_type('2','branch')
+	Assigned1=W.assign('leaf','TID1');  Assigned2=W.assign('branch','TID2'); 
+	W.complete(Assigned1,True);			W.complete(Assigned2,False);
+	W.logout(Assigned1);				W.logout(Assigned2);
 	W.displ()
