@@ -105,32 +105,23 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         return msg
 
     def shake_tree(self,mode=None):
-        try:                                            # Get a new task from the tree
+        elem = TaskTree.get_q_len()
+        for i in range(1,elem+1):                       # get a task to assign
             tq = TaskTree.get_q_elem()                  # get a task to assign
-            elem = TaskTree.get_q_len()
             print 'shake_tree: NewQlen=' + str(elem) + 'Task got is ' + str(tq)
-        except: 
-            print "Exception in shake_tree : No tasks available, assume tree-building is complete"
-            return 
-
-        wid = wm.W.assign('branch',tq[1])               # find a free worker
-        if(wid):
-            ws = wm.W.get_socket(wid)
-           # ws.write_message('Shruthi-try')
-            msg = ws.fill_msg_wsh(tq[1],mode='branch')
-            print 'Sending a msg to show task ' + str(tq[1])+'to worker ' + wid
-
-            #important step for sending ready msgs:
-            #hide the mode of the message in preference to know
-            #what content to preview to worker. 
-            msg['preference']=msg['mode']
-            msg['mode']="ready"
-            
-            send_task(msg)
-            #todo:msg = ws.fill_msg_wsh(tq[1])
-            return 0
-        else:   
-            TaskTree.add_to_q(tq[0],tq[1])              # Put the task back in the queue
+            wid = wm.W.assign('branch',tq[1])               # Get a free worker to do the task picked above
+            if(wid):
+                ws = wm.W.get_socket(wid)
+               # ws.write_message('Shruthi-try')
+                msg = ws.fill_msg_wsh(tq[1],mode='branch')
+                print 'Sending a msg to show task ' + str(tq[1])+'to worker ' + wid
+                #print 'Socket of wid is ' + str(ws.workerId)
+                send_task(msg)
+                #todo:msg = ws.fill_msg_wsh(tq[1])
+            else:
+                print 'Warning - no workers'   
+                TaskTree.add_to_q(tq[0],tq[1])              # Put the task back in the queue
+                break
 
     def send_msg(self,msg):
         self.write_message(tornado.escape.json_encode(msg))
@@ -138,38 +129,33 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def logout_callback(self,msg):
         self.close()
         
-    def idle_callback(self,msg):#probably not necessary...
+    def idle_callback(self,msg):
+        #waiting on API
+        #min = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
+        #print "adding idle min:", min
+        #wm.W.addIdleTime(self.workerId,min)
         print "idle callback"
         
     def ready_callback(self,msg):
-        if(msg['preference'] == "accept"):            
-            #increase idle time
-            mins = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
-            print "adding idle mins:", mins
-            wm.W.addIdleTime(self.workerId,mins)
-
-        TaskTree.confirm_ready(msg['TID'],msg['preference']);
-        
-        print "ready callback"
+        #tree.release_ready_TID(msg.TID);
+        #assign pre-fetched task 
+        #send msg back
+        print "ready callback" #???
 
     def task_callback(self,msg):
-        
+        #waiting on API
+        #min = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
+        #print "adding active min:", min
+        #wm.W.addActiveTime(self.workerId,min)
         TaskTree.save_results(msg)                       # save results of the task
         TaskTree.wait_for_approval(msg['TID'],msg['WID'])# send msg over socket to wait for approval
+        TaskTree.ask_approval(msg['TID'])                # send msg to parent to approve 
         
-        TaskTree.ask_approval(msg['TID'])                # send msg to parent to approve
-        #KEEP THIS AROUND!!!!:
-        #if(task_approved):            
-            #increase active time
-            # mins = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
-            # print "adding active mins:", mins
-            # wm.W.addActiveTime(self.workerId,mins)            
-            # wm.W.complete(self.workerId,msg['TID'],True)     # Payment
-        #else:
-        wm.W.complete(self.workerId,True)     # Payment
+        #todo: wm.W.complete(self.workerId,msg['TID'],0.05)     # Payment
 
         self.shake_tree();                               # Look to match more work and tasks
-        
+        #self.send_msg(tm.new_msg(self.workerId,"","idle"),self))#fill in params more completely
+
         print "task callback" 
 
     def super_callback(self,msg):
@@ -273,17 +259,16 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         
     def on_close(self):
         print "Closing socket for" + self.workerId
-
-        #abandon current task:
-        TID = wm.W.get_TID(self.workerId)
-        if(TID is not False):
-            print "aborting task: ",TID
-            TaskTree.add_to_q(0,TID)
-            #NOTE!!! may want to add dynamically changing priority
+        #WAITING ON API
+        # TID = wm.W.getTID(self.workerId)
+        # print "aborting task: ",TID
+        # tree.abort_task(TID)
         
-        # #BUSY WAIT FOR AMT TO RESPOND.
-        # while(t_amt.get_hit(self.hitId).num_submitted != 0):
-        #     continue;
+        #self.send_msg(tmsg.new_msg(mode="logout",WID=self.workerId,TID=""));
+        
+        #BUSY WAIT FOR AMT TO RESPOND.
+        while(t_amt.get_hit(self.hitId).num_submitted != 0):
+            continue;
 
         t_amt.delete_amt_hit(self.hitId)
         

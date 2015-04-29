@@ -60,7 +60,7 @@ class Node:
 			self.__msg['leaf_data']	= msg['leaf_data']
 			self.__msg['leaf_task']	= msg['leaf_task']
 			self.__status			= 'pending'
-			#print 'Leaf msg is ' + str(msg)
+		print 'copy_msg: msg is ' + str(msg)
 
 		if(msg['mode'] == 'branch'):		# Add branch worker to wid list 
 			if msg['WID'] not in self.__wid:
