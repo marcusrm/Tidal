@@ -71,9 +71,9 @@ class Tree():
 			print self[parent].children
 			self.add_to_q(self.__count,tid)		# Add task to the priority queue based on creation order
 			return node
-		else:
+		# else:
 			# if ts.LOCAL_TESTING == True:
-			self.set_requestTask()
+			# self.set_requestTask()
 			# else:
 				# print 'TaskMgr: Error! Task creation failed'
 
