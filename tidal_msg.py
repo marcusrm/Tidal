@@ -18,13 +18,14 @@ def new_msg(mode="", WID="", TID="", profile={}):
         'branch_data_type'      : [],       #is each result a leaf or a branch
 
         #super
-        'super_mode'            :'idle',   # Supervision process for this task is 'idle' unapproved' or 'approved'
+        'super_mode'            :'idle',   # Supervision process for this task is unapproved' or 'approved'
         'super_child_num'       :0,
         'super_child_data'      :[],
+        'super_child_data_type' :"",
         'super_child_data_pred' :[],
-        'super_task_ids'        :[],       # TIDs of child branch task nodes
-        'super_approve'         :[],       # True/false approve or reject child branches
-        'super_feedback'        :[],       # Reasons for rejection or approval (optional)
+        'super_task_id'         :"",       # TIDs of child branch task nodes
+        'super_approve'         :False,       # True/false approve or reject child branches
+        'super_feedback'        :"",       # Reasons for rejection or approval (optional)
 
         #leaf info
         'leaf_task'             : "",       #instructions 

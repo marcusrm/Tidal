@@ -32,6 +32,10 @@ class Node:
 		return self.__children
 
 	@property 
+	def wid(self):
+		return self.__wid[-1]
+
+	@property 
 	def type(self):
 		return self.__type;
 
@@ -40,6 +44,26 @@ class Node:
 		if self.__parent is not None:
 			return self.__parent
 
+        def finished_supervision(self):
+                for c in self.__children:
+                        if(c.status == 'pending' || c.status == 'progress'):
+                                return False
+                return True
+        
+        def sapify_leaf(self):
+                self.__msg['sap_data'] = self.__msg['leaf_data']
+                self.__msg['sap_task'] = self.__msg['leaf_task']
+                
+        def collect_sap(self):
+                for c in self.__children :
+                        if(c.status != complete):
+                                return False                        
+                for c in self.__children :
+                        self.__msg['sap_task'].append(c.sap_task)
+                        self.__msg['sap_work'].append(c.sap_data)
+
+                return True
+        
 	def msg(self):
 		return self.__msg
 
@@ -73,6 +97,9 @@ class Node:
 
 		if(msg['mode'] == 'sap'):			# Add sap worker to wid list 
 			self.__sapwid.append(msg['WID'])# RJ: in sap mode, does wid mean sap_wid?
+                        self.__msg['sap_data'] = msg['sap_data']
+                        self.__msg['sap_rating'] = msg['sap_rating']
+                        self.__msg['sap_reject'] = msg['sap_reject']
 
 		if(msg['mode'] == 'super'):	
 			print "# count super_task_ids and move parent to idle pool on completion "

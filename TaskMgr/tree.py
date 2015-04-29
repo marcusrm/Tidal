@@ -130,20 +130,32 @@ class Tree():
 		tid = msg['TID']		
 		self[tid].copy_msg(msg) 
 
-		if(msg['mode'] == 'branch'):								#add nodes to the tree
-			branch_count = len(msg['branch_data'])
-			print 'Tree.py: '+ str(branch_count)+' new Branch nodes added '
-			for i in range(0,branch_count):
-				# Add new node to the tree
-				newtid = hashlib.sha512(str(self.__count)+'haw').hexdigest()	
-				self.__count 	+= 1				
-				newnode 		 = self.add_node(newtid,tid)
-				self.__atasks[msg['branch_data_type'][i]] += 1
-				newnode.fill_newmsg(msg,i);
-		#if (msg['mode'] == 'sap'):									# Add sapped data as input to parent node
-
 		#self.display(self,self.__root);
 
+        def generate_branches(self,tid):
+                msg = self[tid].msg()
+                #add nodes to the tree
+                branch_count = len(msg['branch_data'])
+                print 'Tree.py: '+ str(branch_count)+' new Branch nodes added '
+                for i in range(0,branch_count):
+                        # Add new node to the tree
+                        newtid = hashlib.sha512(str(self.__count)+'haw').hexdigest()	
+                        self.__count 	+= 1				
+                        newnode 		 = self.add_node(newtid,tid)
+                        self.__atasks[msg['branch_data_type'][i]] += 1
+                        newnode.fill_newmsg(msg,i);
+                        
+        def generate_sap(self,tid):
+                msg = self[tid].msg()
+                # #add nodes to the tree
+                # print 'Tree.py: '+ str(branch_count)+' new Branch nodes added '
+                # # Add new node to the tree
+                # newtid = hashlib.sha512(str(self.__count)+'haw').hexdigest()   
+                # self.__count 	+= 1				
+                # newnode	 = self.add_node(newtid,tid)
+                # self.__atasks[msg['branch_data_type'][i]] += 1
+                # newnode.fill_newmsg(msg,i);
+                
 	def ask_approval(self,tid):
 		# Send message to supervisor to approve the task
 		if(self[tid].status == 'pending'):
@@ -153,14 +165,42 @@ class Tree():
 		self[tid].notify_worker(wid,'unapproved')								# to wait for work-approval
 		return
 
-	def process_approval(self,wid,tid):								# Once approved by the parent/super, change state of the child
-		if (self[tid].msg()['super_mode'] != 'unapproved'):		
-			print 'TID '+tid +' is already approved or is idle'
-			return 0	
-		
-		if(self[tid].type() == 'leaf'):
-			self[tid].notify_worker(wid,'approved',notify=1)						# to approved state. TODO: Release worker
-		#if (self[tid].type() == 'branch'):
+        def process_approval(self,msg):
+                
+                child = self[msg['super_task_id']]#might be incorrectly using supertaskid
+                parent = self[msg['TID']]
+                if(msg['super_approve'] == False): #rejected, set worker and task idle
+                        child.status = 'idle'
+                        wm.W.complete(child.wid(),False)
+                        msg['mode']='idle'
+                        msg['WID']=child.wid()
+                        send_task(msg)
+                        self.add_to_q(0,child.id())
+                else:                            #approved 
+                        child.status = 'approved'
+                        if(msg['super_child_data_type']=='leaf'):#release leaf to idle & complete
+                                child.sapify_leaf()
+                                wm.W.complete(child.wid(),True)
+                                msg['mode']='idle'
+                                msg['WID']=child.wid()
+                                send_task(msg)
+                                #tell parent to try to sap
+                                if(child.parent().collect_sap(child)): 
+                                        self.generate_sap(child.parent().id())
+                        else:                         #tell brancher to go super   
+                                msg['super_mode']='approved'
+                                msg['mode']='super'
+                                msg['WID']=child.wid()
+                                self.generate_branches(child.id()) #generate branches of worker
+                                send_task(msg)
+
+                if(parent.finished_supervision()):
+                        parent.state = 'sap' #is this too early? we want someone to come along adn sap this now     
+                        wm.W.complete(parent.wid(),False)
+                        msg['mode']='idle'
+                        msg['WID']=parent.wid()
+                        send_task(msg)
+
 
 	def get_task(self,type):										# Look for tasks of mode 'type'
 		queue = self.__nodes[self.__root]

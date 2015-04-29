@@ -161,26 +161,22 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         TaskTree.wait_for_approval(msg['TID'],msg['WID'])# send msg over socket to wait for approval
         TaskTree.ask_approval(msg['TID'])                # send msg to parent to approve
         
-        #KEEP THIS AROUND!!!!:
-        #if(task_approved):            
+        #KEEP THIS AROUND
+        #if(task_approved):
             #increase active time
             # mins = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
             # print "adding active mins:", mins
-            # wm.W.addActiveTime(self.workerId,mins)            
-            # wm.W.complete(self.workerId,msg['TID'],True)     # Payment
-        #else:
+            # wm.W.addActiveTime(self.workerId,mins)       
         
-        wm.W.complete(self.workerId,True)     # Payment
-
         self.shake_tree();
         
         print "task callback" 
 
     def super_callback(self,msg):
 
-        TaskTree.process_approval(msg['WID'],msg['TID'])
-        
-        self.shake_tree(mode='super');  
+        TaskTree.process_approval(msg)
+                        
+        self.shake_tree(mode='super')
 
     def select_callback(self,msg):
         wm.W.set_type(self.workerId,msg['preference'])
