@@ -2,7 +2,8 @@
 <html>
     <head>
         <title>Task Page</title>
-        <script src="https://code.jquery.com/jquery.min.js"></script>        
+        <script src="https://code.jquery.com/jquery.min.js"></script> 
+        <link rel="stylesheet" type="text/css" href="{{ static_url("main.css") }}" media="screen">     
         <script  type="text/javascript">
          
          var workerId = "{{workerId}}";
@@ -243,11 +244,11 @@
                  msg = JSON.parse(event.data);
 
                  
-                 if(is_idle && msg.mode != "ready"){
+                 /*if(is_idle && msg.mode != "ready"){
                      console.log("another message that was not 'READY' came during an idle state.");
                      msg.mode = "idle";
                      return;
-                 }
+                 }*/
                  console.log('Msg mode is '+msg.mode);
                  
                  hide_all();
@@ -352,11 +353,19 @@
         
         <div class="mode" id="select">
             <h1>Welcome to TIDAL Task Force</h1>
-            <h2> Please select what type of work you would like to do today. </h2>
             
-	    <input type="button" value="Branch" onclick="send_select('branch')"> </br>
-	    <input type="button" value="Leaf" onclick="send_select('leaf')"> </br>
-	    <input type="button" value="Sap" onclick="send_select('sap')"> </br>
+            <div id='instructions'>
+            <h2> Task Description <h2>
+            <p>Hi, Tidal is a crowd application for trip planning. It is based on a divide-and-plan idea, where the main task is made into 2 to 5 branches. These branch tasks are furthur made into more branches. When you feel that a given task is small/easy enough to be done by one person, it can be answered instead of branching furthur. To begin working, choose a preferred task-style.</p> 
+            </div>
+
+            <div id='selectTask'>
+                <p>Please select what type of task you would like to do today.</p>
+                <input id='button' type="button" value="Branch" onclick="send_select('branch')"> Branch task involves splitting a given task into sub-tasks. You would need to provide suitable instructions and monitor the sub-tasks that you create. </br>
+        	    <input id='button' type="button" value="Leaf" onclick="send_select('leaf')"> Leafer completes one of the smaller tasks created by an earlier brancher</br>
+        	    <input id='button' type="button" value="Sap" onclick="send_select('sap')">Sappers combine together the subtasks for a given tasks and formats them into a single task </br>
+                <span id='warn'>Note:All task types are paid equally.</span>
+            </div>
 
         </div>
         <div class="mode" id="idle">
@@ -375,10 +384,10 @@
         </div>
         
         <div class="mode" id="branch" >
-            <form name="BranchForm" method="post" onsubmit="send_branch()" action="javascript:void(0);">
+            <form id='branchform' name="BranchForm" method="post" onsubmit="send_branch()" action="javascript:void(0);">
 	        <input name="parent" id="parent" type="hidden" value = "1">
-                    <b>Instructions:</b><br><br>
-                    <label class='red' id="branch_instructions"></label>
+                    <p><b>Instructions:</b></p><br>
+                    <label class='parent' id="branch_instructions"></label>
                     <br><br>
 	            <div id="LorB">
 	                <label class="field">You choose to </label>
@@ -446,10 +455,11 @@
         <div class="hud" id="hud">
             "Sorry, no statistics right now"
         </div>
-        
-	<input type="button" value="LOGOUT and COLLECT MONEY" onclick="send_logout()"> </br>
-	<input type="button" id="show_hud" value="Show Stats" onclick="show_hud()"> </br>
-	<input type="button" id="hide_hud" value="Hide Stats" onclick="hide_hud()"> </br>
+    <div id='footer'>
+	<input style="float:left" type="button" id='logout_but'value="Logout" onclick="send_logout()">
+	<input style="float:right" type="button" id="show_hud" value="Show Account Stats" onclick="show_hud()">
+	<input style="float:right" type="button" id="hide_hud" value="Hide Account Stats" onclick="hide_hud()"> </br>
+    </div>
         
         <form action="{{turkSubmitTo}}"" type="hidden" method='POST' id="AMT_form">
             <input type="hidden" name="hitId" value="{{hitId}}"> 
