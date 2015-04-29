@@ -1,0 +1,28 @@
+Tidal Trip Planner
+
+Welcome fellow Turkers! We require you to help someone plan a trip. We would require you to do ONE of the following of your choice:
+1. Break Tasks-Break major itinerary milestones into smaller sub-tasks. Eg: Break Day 1 of trip into sub-tasks say: Travel, Accomodation and Sightseeing.
+2. Solve Tasks-Solve the sub-tasks. Eg: Get Hotel info, nearby attractions, flight info.
+3. Glue Tasks -Combine information  Eg: Combine all above information
+
+Note: 
+-Break Task involves casual monitoring of the created sub-tasks.
+-All submitted tasks are approved by fellow Turkers
+
+
+Here's how we're different from most HITs:
+1. We aim for an hourly pay rate of $8-9/hr and pay for small breaks at $1.20/hr. Each approved task you do earns $0.50.
+2. While waiting on us, leave our Tab open, take a break or do other AMT HITs. We pay your break time and will notify you if a new task appears.
+3. We provide a steady stream of tasks right to you. No page reloads or re-accepting HITs.
+4. The more tasks you do, the higher is your ranking compared to other workers and the harder we try to help you earn more. 
+
+Note: 
+- Each approved task you do within a HIT earns you $0.50. 
+- The base HIT amount is $0.50 and every additional task you do earns you $0.50. 
+- We pay the amount you earn per task as bonuses. 
+
+
+About Us:
+This HIT is part of a class project at Purdue University by Richard Marcus, Shruthi Balakrishna and Nikhil Jali
+Feel free to email us at njali@purdue.edu with any questions or concerns.
+This is an experimental setup and if you run into any bugs, don't worry, we will make sure you are paid.

@@ -14,7 +14,9 @@ class Tree():
 		self.__root  = 0					# Root TID - Requester's task
 		self.__count = 0					# tid count generator
 		self.__q   	 = pq()					# Priority Queue
+                self.__sq   	 = pq()					# sapper Priority Queue
 		self.__qlen	 = 0					# Queue length
+		self.__sqlen	 = 0					# sapper Queue length
 		self.__atasks= {}				 	# Active leaf tasks
 		self.__amt	 = 0					# Total cash allocated for the task
 
@@ -37,6 +39,25 @@ class Tree():
 		print "TidalQueue: Removed element - len is" + str(self.__qlen)
 		return elem 						# Return TID of next task in queue
 
+	############################# sapper Priority Queue Methods##############################
+	def get_sq_len(self):					# Get the current length of the queue
+		return self.__sqlen					
+
+	@property 
+	def get_sq(self):						# Get a copy of the queue
+		print self.__sq
+
+	def add_to_sq(self,priority,tid):
+		self.__sq.put_nowait((priority,tid)) # Put task in queue
+		self.__sqlen += 1					# Keep queue length count
+		print 'TidalQueue: Add element - len is ' +str(self.__sqlen)
+
+	def get_sq_elem(self):
+		elem = self.__sq.get_nowait();		# Pull next task from queue
+		self.__sqlen -= 1					# Decrement queue length
+		print "TidalQueue: Removed element - len is" + str(self.__sqlen)
+		return elem 						# Return TID of next task in queue
+
 	############################# Task Tree Methods ##################################### 
 	@property 
 	def nodes(self):						# Returns dict of all nodes in the tree
@@ -45,6 +66,9 @@ class Tree():
 	def get_task_count(self):				# Returns dict of active task counts
 		return self.__atasks
 
+        def is_root(self,tid):
+                return (tid == self.__root)
+        
 	def set_requestTask(self,task_str=None, amt=40):
 		if self.__root != 0 :
 			print 'TaskMgr:Main task is already set ! Go back and sleep'
@@ -73,7 +97,8 @@ class Tree():
 			return node
 		else:
 			if ts.LOCAL_TESTING == True:
-				self.set_requestTask()
+                                pass
+                        self.set_requestTask()
 			# else:
 				# print 'TaskMgr: Error! Task creation failed'
 
@@ -130,37 +155,62 @@ class Tree():
 		tid = msg['TID']		
 		self[tid].copy_msg(msg) 
 
-		if(msg['mode'] == 'branch'):								#add nodes to the tree
-			branch_count = len(msg['branch_data'])
-			print 'Tree.py: '+ str(branch_count)+' new Branch nodes added '
-			for i in range(0,branch_count):
-				# Add new node to the tree
-				newtid = hashlib.sha512(str(self.__count)+'haw').hexdigest()	
-				self.__count 	+= 1				
-				newnode 		 = self.add_node(newtid,tid)
-				self.__atasks[msg['branch_data_type'][i]] += 1
-				newnode.fill_newmsg(msg,i);
-		#if (msg['mode'] == 'sap'):									# Add sapped data as input to parent node
-
 		#self.display(self,self.__root);
 
-	def ask_approval(self,tid):
+        def generate_branches(self,tid):
+                msg = self[tid].msg()
+                #add nodes to the tree
+                branch_count = len(msg['branch_data'])
+                print 'Tree.py: '+ str(branch_count)+' new Branch nodes added '
+                for i in range(0,branch_count):
+                        # Add new node to the tree
+                        newtid = hashlib.sha512(str(self.__count)+'haw').hexdigest()	
+                        self.__count 	+= 1				
+                        newnode 		 = self.add_node(newtid,tid)
+                        self.__atasks[msg['branch_data_type'][i]] += 1
+                        newnode.fill_newmsg(msg,i);
+                        
+        def generate_sap(self,tid):
+                self.add_to_sq(0,tid)
+                
+	def ask_approval(self,msg):
 		# Send message to supervisor to approve the task
-		if(self[tid].status == 'pending'):
-			self[tid].parent.notify_super(tid)
+                child = self[msg['TID']]
+                child.status = 'pending'
+                if(self.is_root(child.id) is False):
+                        child.parent.notify_super(msg['TID'])
+		child.notify_worker(msg['WID'],'unapproved')
 
-	def wait_for_approval(self,tid,wid): 							# Send a socket message to the worker 
-		self[tid].notify_worker(wid,'unapproved')								# to wait for work-approval
-		return
+        def update_sap(self,child):
+                if(self.is_root(child.id)):
+                        #notify requester
+                        print"UPDATE SAP ON ROOT, notify req?"
+                        return
+                if(child.parent.collect_sap(child)):
+                        child.parent.status = 'sap'
+                        self.generate_sap(child.parent.id)
+                
+        def process_sap(self,msg):
+                child = self[msg['TID']]
+                is_rejected = False
+                for i in range(0,len(msg['sap_reject'])):
+                        if(msg['sap_reject'][i] is False):
+                                redo = self[msg['sap_task_ids'][i]]
+                                redo.status = 'idle'
+                                self.add_to_q(0,redo.id)
+                                is_rejected=True
+                                
+                if(is_rejected is False):                
+                        self.save_results(msg)
+                        self.update_sap(child)
+                
+                if(parent.finished_supervision()):
+                        parent.state = 'sap' #is this too early? we want someone to come along adn sap this now     
+                        wm.W.complete(parent.wid,False)
+                        msg['mode']='idle'
+                        msg['WID']=parent.wid
+                        send_task(msg)
 
-	def process_approval(self,wid,tid):								# Once approved by the parent/super, change state of the child
-		if (self[tid].msg()['super_mode'] != 'unapproved'):		
-			print 'TID '+tid +' is already approved or is idle'
-			return 0	
-		
-		if(self[tid].type() == 'leaf'):
-			self[tid].notify_worker(wid,'approved',notify=1)						# to approved state. TODO: Release worker
-		#if (self[tid].type() == 'branch'):
 
 	def get_task(self,type):										# Look for tasks of mode 'type'
 		queue = self.__nodes[self.__root]
@@ -188,6 +238,9 @@ class Tree():
 		msg =self[tid].msg()
 		return msg
 
+        def get_tid_type(self,tid):
+                return self[tid].type
+        
 	def __getitem__(self,key):
 		return self.__nodes[key]
 

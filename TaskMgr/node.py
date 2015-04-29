@@ -13,7 +13,7 @@ class Node:
 		#Length of children list - no of branches 
 		self.__branches = 0
 		# Task mode - idle, leaf, branch
-		self.__type = 'idle'
+		self.__type = 'branch'
 		# Branch/Leaf Worker list for this task 
 		self.__wid = []
 		# Sap worker list for this node
@@ -25,11 +25,15 @@ class Node:
 		
 	@property 
 	def id(self):
-		return self.__id;
+		return self.__tid;
 
 	@property 
 	def children(self):
 		return self.__children
+
+	@property 
+	def wid(self):
+		return self.__wid.pop()
 
 	@property 
 	def type(self):
@@ -40,6 +44,28 @@ class Node:
 		if self.__parent is not None:
 			return self.__parent
 
+        def finished_supervision(self):
+                for c in self.__children:
+                        if(c.status == 'pending' or c.status == 'progress'):
+                                return False
+                return True
+        
+        def sapify_leaf(self):
+                self.status='complete'
+                self.__msg['sap_data'] = self.__msg['leaf_data']
+                self.__msg['sap_task'] = self.__msg['leaf_task']
+                
+        def collect_sap(self):
+                for c in self.__children :
+                        if(c.status != complete):
+                                return False                        
+                for c in self.__children :
+                        self.__msg['sap_task'].append(c.sap_task)
+                        self.__msg['sap_work'].append(c.sap_data)     
+                        
+
+                return True
+        
 	def msg(self):
 		return self.__msg
 
@@ -73,9 +99,14 @@ class Node:
 
 		if(msg['mode'] == 'sap'):			# Add sap worker to wid list 
 			self.__sapwid.append(msg['WID'])# RJ: in sap mode, does wid mean sap_wid?
+                        self.__msg['sap_data'] = msg['sap_data']
+                        self.__msg['sap_rating'] = msg['sap_rating']
+                        self.__msg['sap_reject'] = msg['sap_reject']
 
-		if(msg['mode'] == 'super'):	
-			print "# count super_task_ids and move parent to idle pool on completion "
+		if(msg['mode'] == 'super'):
+                        self.__msg['super_feedback'] = msg['super_feedback']
+                        self.__msg['super_approve'] = msg['super_approve']
+                        
 		return 
 
 	def fill_newmsg(self,msg,index=0):
@@ -90,14 +121,16 @@ class Node:
 		return
 
 	def notify_super(self,taskid):
-		self.__msg['super_task_ids'].append(taskid)
+		self.__msg['super_task_id'] = taskid
+                #####add some fields for super stuff
 		self.__msg['mode'] = 'super'
 		self.__msg['super_mode'] = 'approved'
-		self.__msg['WID'] = self.__wid.pop()
+		self.__msg['WID'] = self.__wid()
 		tm.send_task(self.__msg)
 
 	# Notify the worker that they must wait for approval 
 	def notify_worker(self,workid,super_mode='unapproved',notify=1):
+                self.__msg['mode']              = 'super'
 		self.__msg['super_mode']	= super_mode
 		self.__msg['WID'] 			= workid
 		if(notify == 1):
