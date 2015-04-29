@@ -72,10 +72,10 @@ class Tree():
 			self.add_to_q(self.__count,tid)		# Add task to the priority queue based on creation order
 			return node
 		else:
-			if ts.LOCAL_TESTING == True:
-				self.set_requestTask()
-			else:
-				print 'TaskMgr: Error! Task creation failed'
+			# if ts.LOCAL_TESTING == True:
+			self.set_requestTask()
+			# else:
+				# print 'TaskMgr: Error! Task creation failed'
 
 	def remove_node(self,id,subtree=taskconst.YES):
 		parent = self[id].parent
@@ -197,3 +197,5 @@ class Tree():
 	def __delitem__(self,key):
 		del self.__nodes[key]
 
+
+TaskTree    = Tree()

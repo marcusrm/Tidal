@@ -10,7 +10,7 @@ import uuid
 from urlparse import urlparse  # py3
 import hashlib
 # Task Tree Imports
-from tree import Tree
+from tree import TaskTree
 import copy
 import myconst
 
@@ -27,8 +27,6 @@ from datetime import datetime
 #debug
 from pdb import set_trace as brk
 
-
-TaskTree    = Tree()
 
 #NOTE! when task can't find anything it should return
 #a blank object with a TYPE of "idle"

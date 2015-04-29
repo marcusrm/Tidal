@@ -15,7 +15,7 @@ os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
 sys.path.append("./TaskMgr/")
 import copy				# For deep copying objects
 import tidal_amt as AMT # Using grant_bonus,post_hit,pay_worker
-import TaskMgr as TM	# Sending logout to user
+#import TaskMgr as TM	# Sending logout to user
 import tidal_msg		# Create Socket Message 
 import sqlite3
 import pickle
@@ -320,7 +320,7 @@ class W(object):
 			# TOO MANY WORKERS PRESENT. LOGOUT THE CURRENT WORKER
 			if(TaskNum< (0.5*WrkNum)):	
 				msg=tidal_msg.send_msg(mode='logout')						# Forcing User to logout
-				tm.send_task(msg)											# Send logout command
+				#TM.send_task(msg)											# Send logout command
 				return True													# return that current user is logged out
 		except:
 			print('WrkMgr: PoolMgmt- Pool Mgmt didn\'t execute. No harm done')
@@ -383,6 +383,7 @@ class W(object):
 	# To store socket object to worker
 	@staticmethod
 	def set_socket(WID,SockObj):
+		print('-'*50)
 		global w
 		try:
 			w[WID].Socket=SockObj
@@ -424,7 +425,6 @@ class W(object):
 			# Wipe Database Clean and add create new table
 			if(WipeDB): 			
 				WipeDB=raw_input("WorkMgr: Are you sure you want to wipe DB? Enter t to wipe: ")
-				brk()
 				if(WipeDB=='t'):
 					w={}
 					cmd='delete from WM'
@@ -479,18 +479,17 @@ class W(object):
 		if WID in w:
 			# Database Stuff
 			try:
-				wdump=copy.deepcopy(w[WID])				# Create a local copy
+				wdump=copy.copy(w[WID])				# Create a local copy
 				wdump.Socket=False
 				DBObject=pickle.dumps(wdump,protocol=2)
 				cmd='insert or replace into WM values(?,?)'
-				cur=wDBcon.execute(cmd,(WID,DBObject))		
+				cur=wDBcon.execute(cmd,(WID,DBObject))	
 			except:
-				print('WrkMgr: WID-'+str(WID)+' DbUpdate Error: Worker details not updatable')
+				print('WrkMgr: WID-'+str(WID)+' DbUpdate Error: WORKER details not updatable')
 				return False
 		
-		# Update Class Attributes in database
+			# Update Class Attributes in database
 			try:
-				DBObject=pickle.dumps(w[WID],protocol=2)
 				cmd='insert or replace into WMList values(?,?)'
 				cur=wDBcon.execute(cmd,('Loffline'	,pickle.dumps(W.Loffline,protocol=2)))		
 				cur=wDBcon.execute(cmd,('Lonline'	,pickle.dumps(W.Lonline	,protocol=2)))		
@@ -499,7 +498,7 @@ class W(object):
 				cur=wDBcon.execute(cmd,('Lbranch'	,pickle.dumps(W.Lbranch	,protocol=2)))
 				cur=wDBcon.execute(cmd,('Lsap'		,pickle.dumps(W.Lsap	,protocol=2)))		
 			except:
-				print('WrkMgr: WID-'+str(WID)+' DbUpdate Error: Worker details not updatable')
+				print('WrkMgr: WID-'+str(WID)+' DbUpdate Error: LIST details not updatable')
 				return False
 	
 	# Delete Entry from Database 
@@ -669,7 +668,7 @@ class W(object):
 			print("WrkMgr APIs: Unknown Error")
 
 #################### INITIALIZE THE WORK MANAGER ##########################
-W.WMinit()		# Automatically adds the 'admin' to pool
+#W.WMinit()		# Automatically adds the 'admin' to pool
 
 
 #################### DEVELOPER SPACE ######################################
@@ -681,6 +680,4 @@ if(DEVMODE==True and DUMMYCODE==True):			# Add Dummy Workers To Pool
 	Assigned1=W.assign('leaf','TID1');  Assigned2=W.assign('branch','TID2'); 
 	W.complete(Assigned1,True);			W.complete(Assigned2,False);
 	W.logout(Assigned1);				W.logout(Assigned2);
-	W.displ()
-
-W.WMinit(True)
+	W.displ() 

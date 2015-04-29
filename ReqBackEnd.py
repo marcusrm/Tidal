@@ -17,6 +17,7 @@ class RequesterHandlerTask(ta.BaseHandler):
         self.render("RequesterTask.html",url_prefix=ts.URL_PREFIX)
 
 	def post(self):
+		brk()
 		msg=self.get_argument(name="TaskInfo",default=None)
 		budget=self.get_argument(name="Budget")
 		if Budget.isdigit():
@@ -24,10 +25,11 @@ class RequesterHandlerTask(ta.BaseHandler):
 		
 		# Check to see if new task was created
 		if self.get_argument(name="NewTask",default=None):
-			if(tree.set_requestTask(msg,Budget):
+			if(tree.set_requestTask(msg,Budget)):
 				self.write('Request Submitted. Press back and logout')
 			else:
-				self.write('Reuqest Denied. Request already active. Only one request currently allowed.')
+				self.write('Request Denied. Request already active. Only one request currently allowed.')
+				
         if self.get_argument("logout",None):
 			self.redirect(ts.URL_PREFIX+"/logout")
         if self.get_argument("login",None):
