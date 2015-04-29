@@ -8,13 +8,18 @@
 DEVMODE=False		# RUN STUFF IN SANDBOX
 DUMMYCODE=False		# RUN CODE AT END OF LIBRARY
 
+
 # Import Required Files
-import tidal_amt as AMT #Using grant_bonus,post_hit,pay_worker
+import os,sys
+os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
+sys.path.append("./TaskMgr/")
+import copy				# For deep copying objects
+import tidal_amt as AMT # Using grant_bonus,post_hit,pay_worker
+import TaskMgr as TM	# Sending logout to user
+import tidal_msg		# Create Socket Message 
 import sqlite3
 import pickle
 from Queue import PriorityQueue
-import os,sys
-os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
 
 
 from pdb import set_trace as brk		# Breakpoint
@@ -222,7 +227,7 @@ class W(object):
 			
 			# If no leafer available, return idle brancher
 			if WIDassign==False and TYPE=='leaf':
-				WIDassign=W.LQpop(TYPE='branch')
+				WIDassign=W.LQPop(TYPE='branch')
 			
 			# Check if Worker Returned
 			if WIDassign==False:
@@ -245,33 +250,82 @@ class W(object):
 		global w
 		WID=str(WID)
 		
+		if (w[WID].TID==False):
+			print('WrkMgr: complete warning- Worker has no task assigned to be indicated as complete. WID-'+str(WID))
+			return False
+		
 		# Add worker back to Idle List
 		try:
 			# Task History Based- Don't add to statistics if None
-			if TaskAccepted!=None:
+			if TaskAccepted!=None:							# Don't increment if no task assigned
 				w[WID].PtaskDone.append(w[WID].TID);		# Save Task History of worker
 				w[WID].PtaskDoneCurrent+=1					# Increment tasks done in  current session
 			w[WID].TID=False								# Reset TID label for worker
 			
-			# Acceptance
+			# Acceptance of Task
 			if TaskAccepted==True:
 				w[WID].Ptaskapprove	+=1						# Increment worker's total number of approved tasks
 				w[WID].PmoneyPend	+=W.wTaskPay			# Pay for the task
+				
+				# Increment Points
+				type=w[WID].type
+				if type=='leaf':
+					w[WID].Pleaf+=1
+				elif type=='branch':
+					w[WID].Pbranch+=1
+				elif type=='sap':
+					w[WID].Psap+=1
+					
 			# Rejection
 			elif TaskAccepted==False:
 				w[WID].Ptaskreject	+=1						# Increment worker's total number of rejected tasks
 		
-			# Add Worker to Priority Lists and Idle Lists
+			# Decide whether to retain worker
+			if(W.WrkPoolMgmt(WID)):							# Automatically logs out current worker/adds new workers if required
+				print('WrkMgr: complete- success. Worker logout initiated. WID-'+str(WID))
+				return True
+				
+			# Add current Worker back to Priority Lists and Idle Lists
 			if WID not in W.Lidle:
 				W.Lidle.append(WID)							# Add to idle list
 				W.DbUpdate(WID)								# Update to database
 				W.LQpush(WID)								# Push worker back into Priority Queue
 				print('WrkMgr: complete- success. Worker added back to pool. WID-'+str(WID))
 				return True
+			else:
+				print('WrkMgr: complete- failure. Worker already in pool. Data mismatch. WID-'+str(WID))
+				return False
+				
 		except:
 			print('WrkMgr: worker Complete error. Error reporting task completion. WID-'+str(WID))
 			return False
 	
+	# Decides whether to get more workers or let go of current worker 
+	@staticmethod
+	def WrkPoolMgmt(CurrWID=False):
+		if CurrWID==False:
+			print('WrkMgr: PoolMgmt- No current worker specified to decide on whether to retain.')
+			return False
+		
+		# Contact Tree to find info on stuff
+		try:
+			TaskInfo=tree.TaskTree.get_task_count()							# Returns Dict of all task types
+			TaskNum=TaskInfo['branch']+TaskInfo['leaf']+TaskInfo['sap']		# Add all tasks
+			WrkNum=len(W.Lonline)											# Find online workers
+			
+			# LESS WORKERS PRESENT. PUT OUT HITS
+			if(TaskNum> (2*WrkNum)):		
+				HITnum=int((TaskNum - (2*WrkNum))/2)
+				AMT.post_hit(HITnum)
+			# TOO MANY WORKERS PRESENT. LOGOUT THE CURRENT WORKER
+			if(TaskNum< (0.5*WrkNum)):	
+				msg=tidal_msg.send_msg(mode='logout')						# Forcing User to logout
+				tm.send_task(msg)											# Send logout command
+				return True													# return that current user is logged out
+		except:
+			print('WrkMgr: PoolMgmt- Pool Mgmt didn\'t execute. No harm done')
+			return False
+		
 	# Return Current Task ID
 	@staticmethod
 	def get_TID(WID):
@@ -369,8 +423,10 @@ class W(object):
 			
 			# Wipe Database Clean and add create new table
 			if(WipeDB): 			
-				WipeDB=raw_input("WorkMgr: Are you sure you want to wipe DB? Enter True to wipe: ")
-				if(WipeDB==True):
+				WipeDB=raw_input("WorkMgr: Are you sure you want to wipe DB? Enter t to wipe: ")
+				brk()
+				if(WipeDB=='t'):
+					w={}
 					cmd='delete from WM'
 					wDBcon.execute(cmd)			
 			
@@ -423,7 +479,7 @@ class W(object):
 		if WID in w:
 			# Database Stuff
 			try:
-				wdump=w[WID]
+				wdump=copy.deepcopy(w[WID])				# Create a local copy
 				wdump.Socket=False
 				DBObject=pickle.dumps(wdump,protocol=2)
 				cmd='insert or replace into WM values(?,?)'
@@ -561,13 +617,20 @@ class W(object):
 		print('WID: '+str(w[WID].WID))
 		print('Status: '+str(w[WID].status))
 		print('TID: '+str(w[WID].TID))
+		print('HID: '+str(w[WID].HID))
 		print('Type:'+str(w[WID].type))
+		
+		print('Total Approvals: '+str(w[WID].Ptaskapprove))
+		print('Total Rejects: '+str(w[WID].Ptaskreject))
+		print('Total Tasks: '+str(len(w[WID].PtaskDone)))
+		print('Current Streak: '+str(w[WID].PtaskDoneCurrent))
 		print('Task History:'+str(w[WID].PtaskDone))
-		print('SocketID:'+str(w[WID].Socket))
+
 		print('Profile Points:')
 		print('    Branch:'+str(w[WID].Pbranch))
 		print('    Leaf:  '+str(w[WID].Pleaf))
-		print('    Sap:   '+str(w[WID].Psap)+'\n\n')
+		print('    Sap:   '+str(w[WID].Psap)+'\n')
+		print('Socket:'+str(w[WID].Socket))
 		
 	# To display List Content
 	@staticmethod
@@ -619,3 +682,5 @@ if(DEVMODE==True and DUMMYCODE==True):			# Add Dummy Workers To Pool
 	W.complete(Assigned1,True);			W.complete(Assigned2,False);
 	W.logout(Assigned1);				W.logout(Assigned2);
 	W.displ()
+
+W.WMinit(True)
