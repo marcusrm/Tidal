@@ -153,23 +153,30 @@ class W(object):
 		global w
 		WID=str(WID)
 		try:
-			AMT.pay_worker(w[WID].HID)							# Paying Worker Base HIT Amount
-			# LOG WORKER OUT AMT 
-			try:
-                                if(w[WID].PmoneyPend >= 0.01):
-                                        AMT.grant_bonus(w[WID].HID,w[WID].PmoneyPend) 	# Pay pending amount
-			except:
-				print "WrkMgr: logout Error. "+str(WID)+"AMT.grant_bonus error"
-				return False
-				
-			w[WID].PmoneyEarned+=w[WID].PmoneyPend		# Incrementing net amount earned
-			w[WID].PmoneyPend=0							# Clear amount earned
+			if w[WID].PtaskDoneCurrent>0:
+				AMT.pay_worker(w[WID].HID)				# Paying Worker Base HIT Amount only if atleast one task is done
+				try:
+					if(w[WID].PmoneyPend >= 0.01):		# Pay pending amount
+						AMT.grant_bonus(w[WID].HID,w[WID].PmoneyPend) 	
+				except:
+					print "WrkMgr: logout Error. "+str(WID)+"AMT.grant_bonus error"
+					return False
+					
+				w[WID].PmoneyEarned+=w[WID].PmoneyPend	# Incrementing net amount earned
+				w[WID].PmoneyPend=0						# Clear amount earned
+				print('WrkMgr: Logout: Success. Amount Paid. WID-'+str(WID) )
+			else:	
+				w[WID].PmoneyPend=0						# Clear amount earned
+				print('WrkMgr: Logout: Success. No Amount Paid. No task done. WID-'+str(WID) )
+			
+			w[WID].PtaskDoneCurrent=0					# Clear Task Counter
+			w[WID].TID=False							# Clear TID
 			w[WID].status='offline'						# Make worker offline
 			w[WID].Socket=False							# Clear Socket
 			W.Lremove(WID)								# Remove From All Lists
 			W.Loffline.append(WID)						# Make Worker Offline
 			W.DbUpdate(WID)								# Update in Database
-			print('WrkMgr: Logout: Success. Amount Paid. WID-'+str(WID) )
+			
 			return True
 		except:
 			print('WrkMgr: Logout Error. Amount Not Paid. Not Logged Out. WID-'+str(WID))
@@ -183,7 +190,7 @@ class W(object):
 			
 			# Pay only if idle greater than threshold and atleast one task done in current session
 			if(w[WID].PtimeIdle>W.wIdleThres and PtaskDoneCurrent>0):	
-				w[WID].PmoneyPend+=W.wIdlePay							# Increment worker's amount
+				w[WID].PmoneyPend+=W.wIdlePay						# Increment worker's amount
 				w[WID].PtimeIdle=0									# Reset Idle counter back to zero
 			return True
 		
@@ -234,22 +241,24 @@ class W(object):
 
 	# Assign Task to Worker
 	@staticmethod
-	def complete(WID,TaskAccepted=True):
+	def complete(WID,TaskAccepted=True):					# TaskAccepted=True,None,False	None-Just Release worker
 		global w
 		WID=str(WID)
 		
 		# Add worker back to Idle List
 		try:
-			# Task History Based
-			w[WID].PtaskDone.append(w[WID].TID);			# Save Task History of worker
-			w[WID].PtaskDoneCurrent+=1						# Incremement tasks done in  current session
+			# Task History Based- Don't add to statistics if None
+			if TaskAccepted!=None:
+				w[WID].PtaskDone.append(w[WID].TID);		# Save Task History of worker
+				w[WID].PtaskDoneCurrent+=1					# Increment tasks done in  current session
 			w[WID].TID=False								# Reset TID label for worker
 			
-			# Acceptance/Rejection
-			if TaskAccepted:
+			# Acceptance
+			if TaskAccepted==True:
 				w[WID].Ptaskapprove	+=1						# Increment worker's total number of approved tasks
-				w[WID].PmoneyPend		+=W.wTaskPay				# Increment current pay session
-			else:
+				w[WID].PmoneyPend	+=W.wTaskPay			# Pay for the task
+			# Rejection
+			elif TaskAccepted==False:
 				w[WID].Ptaskreject	+=1						# Increment worker's total number of rejected tasks
 		
 			# Add Worker to Priority Lists and Idle Lists
@@ -321,8 +330,6 @@ class W(object):
 	@staticmethod
 	def set_socket(WID,SockObj):
 		global w
-
-		print('WrkMgr: set_socket: start')
 		try:
 			w[WID].Socket=SockObj
 			W.DbUpdate(WID)
@@ -371,17 +378,28 @@ class W(object):
 			# Load Worker Data into Working Memory
 			cmd='select * from WM'
 			for row in wDBcon.execute(cmd):
-				w[str(row[0])]=pickle.loads(row[1])
+				WID=str(row[0])
+				w[WID]=pickle.loads(row[1])
+				
+				# Check if previous payment unpaid
+				if w[WID].PmoneyPend>0:
+					try:
+						AMT.pay_worker(w[WID].HID)				# Paying Worker Base HIT Amount only if atleast one task is done
+						AMT.grant_bonus(w[WID].HID,w[WID].PmoneyPend) 	
+						print('WrkMgr: Init- Previous amount not paid to worker. Paying to WID-'+str(WID))
+					except:
+						print('WrkMgr: Init- Error paying previous amount to WID-'+str(WID))
+				
 				# Resetting a few fields
-				w[str(row[0])].HID				=False		# Hit ID->		CURRENT AMT HIT ID
-				w[str(row[0])].TID				=False		# NA or assigned TID->	Current TID				
-				w[str(row[0])].status			='offline' 	# online, offline->    	WORKER STATUS 			
-				w[str(row[0])].type				=None		# leaf, sap, branch-> 	WORKER TYPE				
-				w[str(row[0])].Socket			=False		# SockObj or None-> 	WORKER SOCKET OBJECT	
-				w[str(row[0])].PtimeIdle		=0			# Idle Time										
-				w[str(row[0])].PtimeActive		=0			# Total Time Spend								
-				w[str(row[0])].PmoneyPend		=0			# Pending amount								
-				w[str(row[0])].PtaskDoneCurrent	=0			# If Active in current session					
+				w[WID].HID				=False		# Hit ID->		CURRENT AMT HIT ID
+				w[WID].TID				=False		# NA or assigned TID->	Current TID				
+				w[WID].status			='offline' 	# online, offline->    	WORKER STATUS 			
+				w[WID].type				=None		# leaf, sap, branch-> 	WORKER TYPE				
+				w[WID].Socket			=False		# SockObj or None-> 	WORKER SOCKET OBJECT	
+				w[WID].PtimeIdle		=0			# Idle Time										
+				w[WID].PtimeActive		=0			# Total Time Spend								
+				w[WID].PmoneyPend		=0			# Pending amount								
+				w[WID].PtaskDoneCurrent	=0			# If Active in current session					
 			
 			# Check and add 'admin' entry into DB
 			if 'admin' not in w:

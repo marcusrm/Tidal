@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<!-- (c) Copyright 2015 Purdue University - MIT License -->
+<html >
+<head>
+  <meta charset="utf-8">
+  <title>Tidal Requester!</title>
+  <!--<link rel="stylesheet" href="{{ static_url("main.css") }}"><link>-->
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+  <script src="http://cdn.jsdelivr.net/sockjs/0.3/sockjs.min.js"></script>
+
+  <script>
+    
+    <!--ws = new SockJS('http://127.0.0.1:8008/echo');-->
+
+  </script>
+
+</head>
+<body >
+	<h1> Tidal: Create a new task</h1>
+
+  <form action="{{url_prefix}}/RequesterTaskMgr" method="post">
+	<h3>To create a new task. Enter your requirements. Be as informative as you can regarding what you want out of this task</h3>
+	<textarea id="TaskInfo" name="Key" cols="70" rows="4" required></textarea><br>
+    <input type="submit" name="NewTask" value="Create New Task">
+  </form>
+  <form action="{{url_prefix}}/RequesterTaskMgr" method="post">
+  <br></br>
+    <input type="submit" name="login" value="Go back to login">
+	<input type="submit" name="logout" value="Logout">
+  </form>
+  
+</body>
+</html>
+<!-- vim: set fileencoding=utf-8 tabstop=2 shiftwidth=2 expandtab: -->

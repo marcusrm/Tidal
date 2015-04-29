@@ -3,8 +3,8 @@
 <html >
 <head>
   <meta charset="utf-8">
-  <title>Secret Tidal page!</title>
-  <link rel="stylesheet" href="{{ static_url("main.css") }}">
+  <title>Tidal Requester!</title>
+  <!--<link rel="stylesheet" href="{{ static_url("main.css") }}"><link>-->
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
   <script src="http://cdn.jsdelivr.net/sockjs/0.3/sockjs.min.js"></script>
 
@@ -18,12 +18,13 @@
 <body >
 
   <!-- Text input for new messages -->
-  This is a secret page!
-
-  <form action="{{url_prefix}}/secret" method="post">
+  This is the Requester Work Pool Preview Page. 
+  
+  Add a new task:
+  <form action="{{url_prefix}}/RequesterWorkMgr" method="post">
     <input type="submit" name="logout" value="logout">
   </form>
-  <form action="{{url_prefix}}/secret" method="post">
+  <form action="{{url_prefix}}/RequesterWorkMgr" method="post">
     <input type="submit" name="login" value="login">
   </form>
   

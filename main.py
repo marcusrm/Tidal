@@ -8,10 +8,10 @@ import hashlib, uuid
 import tidal_auth as ta
 import tidal_settings as ts
 import tidal_amt as t_amt
-
 import sys
 sys.path.append("./TaskMgr")
 import TaskMgr as tm
+import ReqBackEnd as rbe
 
 app_settings = {
     "login_url": ts.URL_PREFIX+"/login",
@@ -36,7 +36,8 @@ def init_app():
                         url(ts.URL_PREFIX+ r"/wlogin", ta.wrkLoginHandler),
                         url(ts.URL_PREFIX+ r"/login", ta.loginHandler),
                         url(ts.URL_PREFIX+ r"/logout", ta.logoutHandler),
-                        url(ts.URL_PREFIX+ r"/secret", ta.secretHandler),
+                        url(ts.URL_PREFIX+ r"/RequesterTaskMgr", rbe.RequesterHandlerTask),
+						url(ts.URL_PREFIX+ r"/RequesterWorkMgr", rbe.RequesterHandlerWork),
                         url(ts.URL_PREFIX+ r"/hit", tm.hitHandler),
                         url(ts.URL_PREFIX+ r"/websocket", tm.WebSocketHandler),
                         url(r"/.*", ta.missingHandler)]
