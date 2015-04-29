@@ -116,6 +116,13 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                 msg = ws.fill_msg_wsh(tq[1],mode='branch')
                 print 'Sending a msg to show task ' + str(tq[1])+'to worker ' + wid
                 #print 'Socket of wid is ' + str(ws.workerId)
+        
+                #important step for sending ready msgs:
+                #hide the mode of the message in preference to know
+                #what content to preview to worker. 
+                msg['preference']=msg['mode']
+                msg['mode']="ready"            
+                
                 send_task(msg)
                 #todo:msg = ws.fill_msg_wsh(tq[1])
             else:
@@ -130,36 +137,49 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.close()
         
     def idle_callback(self,msg):
-        #waiting on API
-        #min = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
-        #print "adding idle min:", min
-        #wm.W.addIdleTime(self.workerId,min)
         print "idle callback"
         
     def ready_callback(self,msg):
-        #tree.release_ready_TID(msg.TID);
-        #assign pre-fetched task 
-        #send msg back
+        if(msg['preference'] == "accept"):            
+            #increase idle time
+            mins = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
+            print "adding idle mins:", mins
+            wm.W.addIdleTime(self.workerId,mins)
+        
+            msg['mode']=TaskTree.get_TID_type(msg['TID'])           
+            send_task(msg)
+        else:
+            msg['mode']='idle'
+            TaskTree.add_to_q(0,msg['TID'])
+            send_task(msg)
+            wm.W.complete(self.workerId,None) 
+
         print "ready callback" #???
 
     def task_callback(self,msg):
-        #waiting on API
-        #min = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
-        #print "adding active min:", min
-        #wm.W.addActiveTime(self.workerId,min)
         TaskTree.save_results(msg)                       # save results of the task
         TaskTree.wait_for_approval(msg['TID'],msg['WID'])# send msg over socket to wait for approval
-        TaskTree.ask_approval(msg['TID'])                # send msg to parent to approve 
+        TaskTree.ask_approval(msg['TID'])                # send msg to parent to approve
         
-        #todo: wm.W.complete(self.workerId,msg['TID'],0.05)     # Payment
+        #KEEP THIS AROUND!!!!:
+        #if(task_approved):            
+            #increase active time
+            # mins = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
+            # print "adding active mins:", mins
+            # wm.W.addActiveTime(self.workerId,mins)            
+            # wm.W.complete(self.workerId,msg['TID'],True)     # Payment
+        #else:
+        
+        wm.W.complete(self.workerId,True)     # Payment
 
-        self.shake_tree();                               # Look to match more work and tasks
-        #self.send_msg(tm.new_msg(self.workerId,"","idle"),self))#fill in params more completely
-
+        self.shake_tree();
+        
         print "task callback" 
 
     def super_callback(self,msg):
 
+        TaskTree.process_approval(msg['WID'],msg['TID'])
+        
         self.shake_tree(mode='super');  
 
     def select_callback(self,msg):
@@ -259,16 +279,13 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         
     def on_close(self):
         print "Closing socket for" + self.workerId
-        #WAITING ON API
-        # TID = wm.W.getTID(self.workerId)
-        # print "aborting task: ",TID
-        # tree.abort_task(TID)
         
-        #self.send_msg(tmsg.new_msg(mode="logout",WID=self.workerId,TID=""));
-        
-        #BUSY WAIT FOR AMT TO RESPOND.
-        while(t_amt.get_hit(self.hitId).num_submitted != 0):
-            continue;
+        #abandon current task:
+        TID = wm.W.get_TID(self.workerId)
+        if(TID is not False):
+            print "aborting task: ",TID
+            TaskTree.add_to_q(0,TID)
+            #NOTE!!! may want to add dynamically changing priority
 
         t_amt.delete_amt_hit(self.hitId)
         

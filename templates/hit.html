@@ -70,7 +70,7 @@
                  var num = byId('branchnum').value;
                  for(i=0; i<num;i++){
                     console.log("Branch send")
-                     var sub_is_branch = (byName("Task"+i+"Pred")[1]).checked;
+                     var sub_is_branch = (byName("Task"+i+"Pred")[0]).checked; //leaf = 1
                      console.log("Branch data is " + byId("branch_task"+i).value);
                      msg.branch_data.push(byId("branch_task"+i).value);
                      if(sub_is_branch)

@@ -188,6 +188,9 @@ class Tree():
 		msg =self[tid].msg()
 		return msg
 
+        def get_tid_type(self,tid):
+                return self[tid].type()
+        
 	def __getitem__(self,key):
 		return self.__nodes[key]
 
