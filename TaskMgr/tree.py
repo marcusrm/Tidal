@@ -75,6 +75,7 @@ class Tree():
 			return False
 		else :
 			tid 						= hashlib.sha512(str(self.__count)+'haw').hexdigest()
+                        self.__count+=1
 			node 						= Node(tid,None) # Create root node
 			self[tid] 					= node 	# Add node to the class Dict
 			self.__root 				= tid 	# Store root tid
@@ -160,6 +161,7 @@ class Tree():
         def generate_branches(self,tid):
                 msg = self[tid].msg()
                 #add nodes to the tree
+                #print msg
                 branch_count = len(msg['branch_data'])
                 print 'Tree.py: '+ str(branch_count)+' new Branch nodes added '
                 for i in range(0,branch_count):
@@ -177,9 +179,10 @@ class Tree():
 		# Send message to supervisor to approve the task
                 child = self[msg['TID']]
                 child.status = 'pending'
+                print "ASK APPROVAL"
                 if(self.is_root(child.id) is False):
                         child.parent.notify_super(msg['TID'])
-		child.notify_worker(msg['WID'],'unapproved')
+                        child.notify_worker(msg['WID'],'unapproved') 
 
         def update_sap(self,child):
                 if(self.is_root(child.id)):

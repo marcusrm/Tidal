@@ -44,6 +44,12 @@ class Node:
 		if self.__parent is not None:
 			return self.__parent
 
+        def add_wid(self,wid):
+                self.__wid.append(wid)
+                
+        def add_sapwid(self,wid):
+                self.__sapwid.append(wid)
+                
         def finished_supervision(self):
                 for c in self.__children:
                         if(c.status == 'pending' or c.status == 'progress'):
@@ -121,6 +127,7 @@ class Node:
 		return
 
 	def notify_super(self,taskid):
+                print "NOTIFY SUPER"
 		self.__msg['super_task_id'] = taskid
                 #####add some fields for super stuff
 		self.__msg['mode'] = 'super'
