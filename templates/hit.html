@@ -2,13 +2,15 @@
 <html>
     <head>
         <title>Task Page</title>
-        <script src="https://code.jquery.com/jquery.min.js"></script>
-        
+        <script src="https://code.jquery.com/jquery.min.js"></script>        
         <script  type="text/javascript">
          
          var workerId = "{{workerId}}";
          var ws;
          var msg = {"mode":"select"};
+         var idle_time = 0;
+         var idle_clock;
+         var ready_countdown;
          
          var byId = function( id ) {
              return document.getElementById( id );
@@ -37,9 +39,6 @@
          }
 
          function send_logout(){
-             //needs to logout through AMT as well as us.
-             //msg.mode = "logout";
-             //ws.send(JSON.stringify(msg));
              ws.close();
          }
 
@@ -86,8 +85,8 @@
 		 "<div style='clear:both;'> \
                                           <b>Original Task"+i+" Instructions:</b> <br> <label id='sap_task"+i+"'></label><br><br>\
                                           <b>Worker Output:</b> <br> <label id='sap_work"+i+"'></label><br><br>\
-                                          <b>Reject it?:</b> <input id='sap_reject"+i+"' type='checkbox'  value='reject'> <br><br>\
-                                          <b>Rating (bad<->good):</b><input id='sap_rating"+i+"' type='range'  value='5' min='0' max='10'> \
+                                          <b>Reject it?:</b> <input required id='sap_reject"+i+"' type='checkbox'  value='reject'> <br><br>\
+                                          <b>Rating (bad<->good):</b><input required id='sap_rating"+i+"' type='range'  value='5' min='0' max='10'> \
                                           
       </div><br>"
                  byId('SapForm').innerHTML += html;
@@ -144,21 +143,41 @@
              byId('super_child_data_type').innerHTML = msg.super_child_data_type;
          }
 
-         function send_ready(){
-             msg.mode = "ready";
-             ws.send(JSON.stringify(msg));
-         }
-
-         function start_idle_counter(){
-             var start = new Date;
-             setInterval(
-                 function update_idle_counter() {
-                     var diff = (new Date) - start;
-                     if(diff > 3600000)
+         function start_idle_clock(is_restart){
+             if(is_restart){
+                 idle_time = 0;
+             }
+             idle_clock = setInterval(function() {
+                     idle_time += 1;
+                     if(idle_time > 3600)
                          send_logout();
-                     byId('idle_timer').innerHTML = "You've been idle for "+(diff / 1000) + " Seconds";
+                     byId('idle_timer').innerHTML = "You've been idle for "+idle_time+" Seconds";
                  }
                  , 1000);
+         }         
+         function stop_idle_clock(){
+             clearInterval(idle_clock);
+         }         
+         function start_ready_countdown(){
+             var n = 0;
+             var ready_limit = 3000;
+             ready_countdown = setInterval(function(){
+                 n += 1;
+                 if( n > ready_limit)
+                     send_ready("decline");
+                 byId('ready_timer').innerHTML = "You have "+(ready_limit-n)+" seconds to accept.";
+             }, 1000);
+         }        
+         function send_ready(choice){
+             clearInterval(ready_countdown);
+             clearInterval(idle_clock);
+             if(choice != "accept")
+                 start_idle_clock(false);
+             hide_all();
+             msg.mode="ready";
+             msg.preference=choice;
+             ws.send(JSON.stringify(msg));
+             msg.mode="idle";
          }
 
          function gen_hud(){
@@ -189,53 +208,55 @@
              byId(msg.mode).style.display = 'block';
              byId(msg.mode).style.disabled = false;
          }
-          
-          
+
+         function gen_preview(){
+             console.log("in gen preview");
+             byId(msg.preference).style.display = 'block';
+             //$('#'+msg.preference).find('input, textarea, button, select').attr('disabled',true);
+         }
+
          window.onload = function(){
              var ws_url;
              if("{{local_testing}}" == "True")
                  ws_url = "ws://localhost:{{port}}{{url_prefix}}/websocket?workerId="+"{{workerId}}&hitId="+"{{hitId}}";
              else
                  ws_url = "wss://crowd.ecn.purdue.edu{{url_prefix}}/websocket?workerId="+"{{workerId}}&hitId="+"{{hitId}}";
-             //print 'ws url = '+ws_url
-             byId('hud').style.display = 'none';
-             byId('hide_hud').style.display = 'none';
+
+             hide_all();
+             hide_hud();
              
              ws = new WebSocket(ws_url);
              console.log("Websocket created = "+ws_url);
-
-             hide_all();
 
              ws.onmessage = function(event)
              {
                  var is_idle = (msg.mode == "idle");
                  msg = JSON.parse(event.data);
 
-                 if(is_idle && (msg.mode == "ready")){
-                     var idle_ping = msg;
-                     idle_ping.mode = "idle";
-                     ws.send(JSON.stringify(idle_ping));
-                 }
-                 else if(is_idle){
+                 
+                 if(is_idle && msg.mode != "ready"){
                      console.log("another message that was not 'READY' came during an idle state.");
                      msg.mode = "idle";
                      return;
                  }
-                 console.log('Msg mode is '+msg.mode)
-                 //console.log("message = " + event.data);
+                 console.log('Msg mode is '+msg.mode);
                  
                  hide_all();
+                 hide_hud();                 
                  byId(msg.mode).style.display = 'block';
-                 byId(msg.mode).style.disabled = false;
+                 $('#'+msg.preference).find('input, textarea, button, select').attr('disabled',false);
                  
                  switch(msg.mode){
                      case "hud": gen_hud();
                          break;
-                     case "idle": start_idle_counter();
+                     case "idle": start_idle_clock(true);
                          break;
                      case "select":
                          break;
-                     case "ready": //stop idle counter & flash
+                     case "ready":
+                         start_ready_countdown();
+                         stop_idle_clock();
+                         gen_preview();//stop idle counter & flash
                          break;
                      case "leaf": 
                         console.log('gen_leaf');
@@ -252,7 +273,9 @@
                      case "super":                  //Supervisor needs to approve the task  
                         console.log('gen_super()');
                         gen_super();
-                        break;
+                         break;
+                     case "logout": send_logout();
+                         break;
                      default:
                          error();
                  }
@@ -275,16 +298,12 @@
              var num = byId('branchnum').value;
              byId('BranchBranchForm').innerHTML ="";
              for(i=0; i<num;i++){
-		 var html = 
-		 "<div id='branch_taskarea"+i+"' style='clear:both;'> \
-                                          <label><b>SubTask Instructions</b> </label>\
-                                          <textarea name='branch_task"+i+"' id='branch_task"+i+"' class='box' type='text' placeholder='Leaf Task Space' maxlength='500'\
-                                                    style='width:350px; height:150px; float:left' required> </textarea>\
+		 var html = " <label><b>SubTask Instructions</b> </label>\
+                                          <textarea required name='branch_task"+i+"' id='branch_task"+i+"' class='box' type='text' placeholder='Leaf Task Space' maxlength='500' style='width:350px; height:150px; float:left;'></textarea>\
                                           <label class='field'><br>According to you, should this task be <br></label>\
                                           <input name='Task"+i+"Pred' type='radio'  value='branchnext'>Branched into subtasks by further by another worker<br>\
                                           <input name='Task"+i+"Pred' type='radio'  value='leafnext'> Completed by a single worker\
-</br >\
-      </div>";
+</br >";
                  byId('BranchBranchForm').innerHTML += html;
              }
          }
@@ -303,7 +322,7 @@
              else
              {
                  var  html = "<label>Number of Branches</label>\
-      <select id='branchnum' onchange='insert_branch_tasks_html()'>\
+      <select required id='branchnum' onchange='insert_branch_tasks_html()'>\
         <option value='2'>2</option>\
         <option value='3'>3</option>\
         <option value='4'>4</option>\
@@ -340,14 +359,15 @@
         </div>
         
         <div class="mode" id="ready">
-            <h1>Hey! We found you a task!</h1>
-	    <input type="button" value="I'm ready!" onclick="send_ready()"> </br>
+            <h1>Hey! We found you a task! Here's a Preview:</h1>
+	    <input type="button" value="Accept" onclick="send_ready('accept')"> </br>
+            <input type="button" value="Decline" onclick="send_ready('decline')"> </br>
+            <div id="ready_timer"></div>
         </div>
         
         <div class="mode" id="branch" >
             <form name="BranchForm" method="post" onsubmit="send_branch()" action="javascript:void(0);">
 	        <input name="parent" id="parent" type="hidden" value = "1">
-	        <fieldset>
                     <b>Instructions:</b><br><br>
                     <label class='red' id="branch_instructions"></label>
                     <br><br>
@@ -360,8 +380,6 @@
 	            <div id="BranchLeafForm"></div>
 	            <div id="BranchBranchForm"></div>
 	            <input type="submit" style='clear:both;float:left' value="Post Branches as tasks" id="SubmitBranch"> </br>
-	            <!--<input counterforcash>-->
-	        </fieldset>
             </form>
         </div>
 
@@ -404,8 +422,8 @@
                 The worker completed it as a <label id="super_child_data_type" style="color:red"></label> type node. <br><br>
                 The worker response: <br><label id="super_child_data"></label>
                 <label class='field'><br>Approved </label>
-                <input name='super_approve' id='super_approve' type='checkbox' default='unchecked' value='Approved'></br >
-                <textarea name='super_feedback' id='super_feedback' class='box' type='text' placeholder='Feedback' maxlength='500' style='width:350px; height:150px; float:left' required> </textarea>
+                <input name='super_approve' id='super_approve' type='checkbox' default='unchecked' value='Approved' required></br >
+                <textarea name='super_feedback' id='super_feedback' class='box' type='text' placeholder='Feedback' maxlength='500' style='width:350px; height:150px; float:left' <!-- required? -->> </textarea>
                 
 	            <input type="submit" style='clear:both;float:left' value="Submit Supervision" id="SubmitSuper"> </br>
                 <br>
