@@ -184,7 +184,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
         if(TaskTree.is_root(child.id) is False):
             parent = TaskTree[msg['TID']]
-            if(parent.finished_supervision()):
+            if(TaskTree.finished_supervision(parent.id)):
                 parent.state = 'sap' #is this too early? we want someone to come along adn sap this now     
                 wm.W.complete(parent.wid,False)
                 msg['mode']='idle'
@@ -236,7 +236,6 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         print "ready callback" #???
 
     def task_callback(self,msg):
-        import pdb; pdb.set_trace()
         if(TaskTree.is_root(msg['TID']) is True):
             TaskTree[msg['TID']].status = 'sap'
             TaskTree[msg['TID']].add_wid(self.workerId)

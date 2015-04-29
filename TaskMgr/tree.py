@@ -66,6 +66,9 @@ class Tree():
 	def get_task_count(self):				# Returns dict of active task counts
 		return self.__atasks
 
+        def get_parent(self,child):
+                return self[child.parent]
+
         def is_root(self,tid):
                 return (tid == self.__root)
         
@@ -158,6 +161,12 @@ class Tree():
 
 		#self.display(self,self.__root);
 
+        def finished_supervision(self,tid):
+                for c in self[tid].children:
+                        if(self[c].status == 'pending' or self[c].status == 'progress'):
+                                return False
+                return True
+                
         def generate_branches(self,tid):
                 msg = self[tid].msg()
                 #add nodes to the tree
@@ -181,7 +190,7 @@ class Tree():
                 child.status = 'pending'
                 print "ASK APPROVAL"
                 if(self.is_root(child.id) is False):
-                        child.parent.notify_super(msg['TID'])
+                        self[child.parent].notify_super(msg['TID'])
                         child.notify_worker(msg['WID'],'unapproved') 
 
         def update_sap(self,child):
@@ -189,9 +198,9 @@ class Tree():
                         #notify requester
                         print"UPDATE SAP ON ROOT, notify req?"
                         return
-                if(child.parent.collect_sap(child)):
-                        child.parent.status = 'sap'
-                        self.generate_sap(child.parent.id)
+                if(self[child.parent].collect_sap(child)):
+                        self[child.parent].status = 'sap'
+                        self.generate_sap(self[child.parent].id)
                 
         def process_sap(self,msg):
                 child = self[msg['TID']]
@@ -207,12 +216,16 @@ class Tree():
                         self.save_results(msg)
                         self.update_sap(child)
                 
-                if(parent.finished_supervision()):
-                        parent.state = 'sap' #is this too early? we want someone to come along adn sap this now     
-                        wm.W.complete(parent.wid,False)
-                        msg['mode']='idle'
-                        msg['WID']=parent.wid
-                        send_task(msg)
+                        if(self.is_root(child.id) is False):
+                                parent = self[child.parent]
+                                if(self.finished_supervision(parent.id)):
+                                        parent.state = 'sap' 
+                                        wm.W.complete(parent.wid,False)
+                                        msg['mode']='idle'
+                                        msg['WID']=parent.wid
+                                        send_task(msg)
+                        else:
+                             print "NOTIFY REQUESTER, task is done.  "       
 
 
 	def get_task(self,type):										# Look for tasks of mode 'type'

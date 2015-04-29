@@ -33,7 +33,7 @@ class Node:
 
 	@property 
 	def wid(self):
-		return self.__wid.pop()
+		return self.__wid[-1]
 
 	@property 
 	def type(self):
@@ -48,13 +48,7 @@ class Node:
                 self.__wid.append(wid)
                 
         def add_sapwid(self,wid):
-                self.__sapwid.append(wid)
-                
-        def finished_supervision(self):
-                for c in self.__children:
-                        if(c.status == 'pending' or c.status == 'progress'):
-                                return False
-                return True
+                self.__sapwid.append(wid)                
         
         def sapify_leaf(self):
                 self.status='complete'
@@ -132,7 +126,7 @@ class Node:
                 #####add some fields for super stuff
 		self.__msg['mode'] = 'super'
 		self.__msg['super_mode'] = 'approved'
-		self.__msg['WID'] = self.__wid()
+		self.__msg['WID'] = self.wid
 		tm.send_task(self.__msg)
 
 	# Notify the worker that they must wait for approval 
