@@ -147,6 +147,7 @@ class Tree():
                         
         def generate_sap(self,tid):
                 msg = self[tid].msg()
+                
                 # #add nodes to the tree
                 # print 'Tree.py: '+ str(branch_count)+' new Branch nodes added '
                 # # Add new node to the tree
@@ -156,15 +157,32 @@ class Tree():
                 # self.__atasks[msg['branch_data_type'][i]] += 1
                 # newnode.fill_newmsg(msg,i);
                 
-	def ask_approval(self,tid):
+	def ask_approval(self,msg):
 		# Send message to supervisor to approve the task
-		if(self[tid].status == 'pending'):
-			self[tid].parent.notify_super(tid)
+                child = self[msg['TID']]
+                child.status = 'pending'
+                child.parent.notify_super(msg['TID'])
+		child.notify_worker(wid,'unapproved')
 
-	def wait_for_approval(self,tid,wid): 							# Send a socket message to the worker 
-		self[tid].notify_worker(wid,'unapproved')								# to wait for work-approval
-		return
-
+        def update_sap(self,child):                
+                if(child.parent().collect_sap(child)): 
+                        self.generate_sap(child.parent().id())
+                
+        def process_sap(self,msg):
+                child = self[msg['TID']]
+                parent = child.parent
+                is_rejected = False
+                for(i in len(msg['sap_reject'])):
+                        if(msg['sap_reject'][i] is False):
+                                redo = self[msg['sap_task_ids'][i]]
+                                redo.status = 'idle'
+                                self.add_to_q(0,redo.id())
+                                is_rejected=True
+                                
+                if(is_rejected is False):                
+                        self.save_results(msg)
+                        self.update_sap(child)
+                
         def process_approval(self,msg):
                 
                 child = self[msg['super_task_id']]#might be incorrectly using supertaskid
@@ -185,8 +203,7 @@ class Tree():
                                 msg['WID']=child.wid()
                                 send_task(msg)
                                 #tell parent to try to sap
-                                if(child.parent().collect_sap(child)): 
-                                        self.generate_sap(child.parent().id())
+                                self.update_sap(child)
                         else:                         #tell brancher to go super   
                                 msg['super_mode']='approved'
                                 msg['mode']='super'

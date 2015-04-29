@@ -157,11 +157,14 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         print "ready callback" #???
 
     def task_callback(self,msg):
-        TaskTree.save_results(msg)                       # save results of the task
-        TaskTree.wait_for_approval(msg['TID'],msg['WID'])# send msg over socket to wait for approval
-        TaskTree.ask_approval(msg['TID'])                # send msg to parent to approve
+         if(msg['mode'] != 'sap'):
+            TaskTree.ask_approval(msg)     # send msg to parent to approve
+            TaskTree.save_results(msg)     # save results of the task       
+        else:
+            TaskTree.process_sap(msg)        
+            wm.W.complete(child.wid(),True)
         
-        #KEEP THIS AROUND
+        #keep this around... maybe
         #if(task_approved):
             #increase active time
             # mins = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
@@ -280,9 +283,10 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         TID = wm.W.get_TID(self.workerId)
         if(TID is not False):
             print "aborting task: ",TID
-            TaskTree.add_to_q(0,TID)
+            TaskTree.add_to_q(0,TID)        
+            wm.W.complete(child.wid(),False)
             #NOTE!!! may want to add dynamically changing priority
-
+            
         t_amt.delete_amt_hit(self.hitId)
         
         wm.W.logout(self.workerId)

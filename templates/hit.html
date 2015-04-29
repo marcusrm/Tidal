@@ -60,6 +60,7 @@
              msg.mode = "leaf";
              msg.leaf_data = byId("leaftask_text").value;
              ws.send(JSON.stringify(msg));
+             byId('leaf').innerHTML = "Thank you ! Now, wait for your work to be supervised before proceeding... ";
          }
          
          function send_branch() {
@@ -79,7 +80,7 @@
                          msg.branch_data_type.push("leaf");
                          
                  }
-                 byId('branch').innerHTML = "Thank you ! Now, wait to supervise your task ";
+                 byId('branch').innerHTML = "Thank you ! Now, wait for your work to be supervised before proceeding... ";
                  ws.send(JSON.stringify(msg));
              }
          }
@@ -459,3 +460,4 @@
         
     </body>
 
+</html>

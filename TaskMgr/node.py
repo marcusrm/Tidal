@@ -51,6 +51,7 @@ class Node:
                 return True
         
         def sapify_leaf(self):
+                self.status='complete'
                 self.__msg['sap_data'] = self.__msg['leaf_data']
                 self.__msg['sap_task'] = self.__msg['leaf_task']
                 
@@ -101,8 +102,10 @@ class Node:
                         self.__msg['sap_rating'] = msg['sap_rating']
                         self.__msg['sap_reject'] = msg['sap_reject']
 
-		if(msg['mode'] == 'super'):	
-			print "# count super_task_ids and move parent to idle pool on completion "
+		if(msg['mode'] == 'super'):
+                        self.__msg['super_feedback'] = msg['super_feedback']
+                        self.__msg['super_approve'] = msg['super_approve']
+                        
 		return 
 
 	def fill_newmsg(self,msg,index=0):
@@ -117,19 +120,21 @@ class Node:
 		return
 
 	def notify_super(self,taskid):
-		self.__msg['super_task_ids'].append(taskid)
+		self.__msg['super_task_id'] = taskid
+                #####add some fields for super stuff
 		self.__msg['mode'] = 'super'
 		self.__msg['super_mode'] = 'approved'
-		self.__msg['WID'] = self.__wid.pop()
+		self.__msg['WID'] = self.__wid()
 		tm.send_task(self.__msg)
 
-	# Notify the worker that they must wait for approval 
-	def notify_worker(self,workid,super_mode='unapproved',notify=1):
-		self.__msg['super_mode']	= super_mode
-		self.__msg['WID'] 			= workid
-		if(notify == 1):
-			tm.send_task(self.__msg)	
-		return
+	# # Notify the worker that they must wait for approval 
+	# def notify_worker(self,workid,super_mode='unapproved',notify=1):
+        #         self.__msg['mode']              = 'super'
+	# 	self.__msg['super_mode']	= super_mode
+	# 	self.__msg['WID'] 			= workid
+	# 	if(notify == 1):
+	# 		tm.send_task(self.__msg)	
+	# 	return
 
 	def requestmsg(self,req_task=None):
 		if req_task is None:
