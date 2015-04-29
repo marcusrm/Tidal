@@ -20,10 +20,12 @@
 
   <form action="{{url_prefix}}/RequesterTaskMgr" method="post">
 	<h3>To create a new task. Enter your requirements. Be as informative as you can regarding what you want out of this task</h3>
-	<textarea id="TaskInfo" name="Key" cols="70" rows="4" required></textarea><br>
+	<textarea id="TaskInfo" name="TaskInfo" cols="70" rows="4" required></textarea><br>
+	
+	<label for="Budget">Budget($): </label>
+	<input type="text" id="Budget" name="Budget" required><br>
     <input type="submit" name="NewTask" value="Create New Task">
-  </form>
-  <form action="{{url_prefix}}/RequesterTaskMgr" method="post">
+  
   <br></br>
     <input type="submit" name="login" value="Go back to login">
 	<input type="submit" name="logout" value="Logout">

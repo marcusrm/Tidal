@@ -8,13 +8,18 @@
 DEVMODE=False		# RUN STUFF IN SANDBOX
 DUMMYCODE=False		# RUN CODE AT END OF LIBRARY
 
+
 # Import Required Files
-import tidal_amt as AMT #Using grant_bonus,post_hit,pay_worker
+import os,sys
+os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
+sys.path.append("./TaskMgr/")
+import copy				# For deep copying objects
+import tidal_amt as AMT # Using grant_bonus,post_hit,pay_worker
+#import TaskMgr as TM	# Sending logout to user
+import tidal_msg		# Create Socket Message 
 import sqlite3
 import pickle
 from Queue import PriorityQueue
-import os,sys
-os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
 
 
 from pdb import set_trace as brk		# Breakpoint
@@ -222,7 +227,7 @@ class W(object):
 			
 			# If no leafer available, return idle brancher
 			if WIDassign==False and TYPE=='leaf':
-				WIDassign=W.LQpop(TYPE='branch')
+				WIDassign=W.LQPop(TYPE='branch')
 			
 			# Check if Worker Returned
 			if WIDassign==False:
@@ -245,33 +250,82 @@ class W(object):
 		global w
 		WID=str(WID)
 		
+		if (w[WID].TID==False):
+			print('WrkMgr: complete warning- Worker has no task assigned to be indicated as complete. WID-'+str(WID))
+			return False
+		
 		# Add worker back to Idle List
 		try:
 			# Task History Based- Don't add to statistics if None
-			if TaskAccepted!=None:
+			if TaskAccepted!=None:							# Don't increment if no task assigned
 				w[WID].PtaskDone.append(w[WID].TID);		# Save Task History of worker
 				w[WID].PtaskDoneCurrent+=1					# Increment tasks done in  current session
 			w[WID].TID=False								# Reset TID label for worker
 			
-			# Acceptance
+			# Acceptance of Task
 			if TaskAccepted==True:
 				w[WID].Ptaskapprove	+=1						# Increment worker's total number of approved tasks
 				w[WID].PmoneyPend	+=W.wTaskPay			# Pay for the task
+				
+				# Increment Points
+				type=w[WID].type
+				if type=='leaf':
+					w[WID].Pleaf+=1
+				elif type=='branch':
+					w[WID].Pbranch+=1
+				elif type=='sap':
+					w[WID].Psap+=1
+					
 			# Rejection
 			elif TaskAccepted==False:
 				w[WID].Ptaskreject	+=1						# Increment worker's total number of rejected tasks
 		
-			# Add Worker to Priority Lists and Idle Lists
+			# Decide whether to retain worker
+			if(W.WrkPoolMgmt(WID)):							# Automatically logs out current worker/adds new workers if required
+				print('WrkMgr: complete- success. Worker logout initiated. WID-'+str(WID))
+				return True
+				
+			# Add current Worker back to Priority Lists and Idle Lists
 			if WID not in W.Lidle:
 				W.Lidle.append(WID)							# Add to idle list
 				W.DbUpdate(WID)								# Update to database
 				W.LQpush(WID)								# Push worker back into Priority Queue
 				print('WrkMgr: complete- success. Worker added back to pool. WID-'+str(WID))
 				return True
+			else:
+				print('WrkMgr: complete- failure. Worker already in pool. Data mismatch. WID-'+str(WID))
+				return False
+				
 		except:
 			print('WrkMgr: worker Complete error. Error reporting task completion. WID-'+str(WID))
 			return False
 	
+	# Decides whether to get more workers or let go of current worker 
+	@staticmethod
+	def WrkPoolMgmt(CurrWID=False):
+		if CurrWID==False:
+			print('WrkMgr: PoolMgmt- No current worker specified to decide on whether to retain.')
+			return False
+		
+		# Contact Tree to find info on stuff
+		try:
+			TaskInfo=tree.TaskTree.get_task_count()							# Returns Dict of all task types
+			TaskNum=TaskInfo['branch']+TaskInfo['leaf']+TaskInfo['sap']		# Add all tasks
+			WrkNum=len(W.Lonline)											# Find online workers
+			
+			# LESS WORKERS PRESENT. PUT OUT HITS
+			if(TaskNum> (2*WrkNum)):		
+				HITnum=int((TaskNum - (2*WrkNum))/2)
+				AMT.post_hit(HITnum)
+			# TOO MANY WORKERS PRESENT. LOGOUT THE CURRENT WORKER
+			if(TaskNum< (0.5*WrkNum)):	
+				msg=tidal_msg.send_msg(mode='logout')						# Forcing User to logout
+				#TM.send_task(msg)											# Send logout command
+				return True													# return that current user is logged out
+		except:
+			print('WrkMgr: PoolMgmt- Pool Mgmt didn\'t execute. No harm done')
+			return False
+		
 	# Return Current Task ID
 	@staticmethod
 	def get_TID(WID):
@@ -329,6 +383,7 @@ class W(object):
 	# To store socket object to worker
 	@staticmethod
 	def set_socket(WID,SockObj):
+		print('-'*50)
 		global w
 		try:
 			w[WID].Socket=SockObj
@@ -369,8 +424,9 @@ class W(object):
 			
 			# Wipe Database Clean and add create new table
 			if(WipeDB): 			
-				WipeDB=raw_input("WorkMgr: Are you sure you want to wipe DB? Enter True to wipe: ")
-				if(WipeDB==True):
+				WipeDB=raw_input("WorkMgr: Are you sure you want to wipe DB? Enter t to wipe: ")
+				if(WipeDB=='t'):
+					w={}
 					cmd='delete from WM'
 					wDBcon.execute(cmd)			
 			
@@ -423,18 +479,17 @@ class W(object):
 		if WID in w:
 			# Database Stuff
 			try:
-				wdump=w[WID]
+				wdump=copy.copy(w[WID])				# Create a local copy
 				wdump.Socket=False
 				DBObject=pickle.dumps(wdump,protocol=2)
 				cmd='insert or replace into WM values(?,?)'
-				cur=wDBcon.execute(cmd,(WID,DBObject))		
+				cur=wDBcon.execute(cmd,(WID,DBObject))	
 			except:
-				print('WrkMgr: WID-'+str(WID)+' DbUpdate Error: Worker details not updatable')
+				print('WrkMgr: WID-'+str(WID)+' DbUpdate Error: WORKER details not updatable')
 				return False
 		
-		# Update Class Attributes in database
+			# Update Class Attributes in database
 			try:
-				DBObject=pickle.dumps(w[WID],protocol=2)
 				cmd='insert or replace into WMList values(?,?)'
 				cur=wDBcon.execute(cmd,('Loffline'	,pickle.dumps(W.Loffline,protocol=2)))		
 				cur=wDBcon.execute(cmd,('Lonline'	,pickle.dumps(W.Lonline	,protocol=2)))		
@@ -443,7 +498,7 @@ class W(object):
 				cur=wDBcon.execute(cmd,('Lbranch'	,pickle.dumps(W.Lbranch	,protocol=2)))
 				cur=wDBcon.execute(cmd,('Lsap'		,pickle.dumps(W.Lsap	,protocol=2)))		
 			except:
-				print('WrkMgr: WID-'+str(WID)+' DbUpdate Error: Worker details not updatable')
+				print('WrkMgr: WID-'+str(WID)+' DbUpdate Error: LIST details not updatable')
 				return False
 	
 	# Delete Entry from Database 
@@ -561,13 +616,20 @@ class W(object):
 		print('WID: '+str(w[WID].WID))
 		print('Status: '+str(w[WID].status))
 		print('TID: '+str(w[WID].TID))
+		print('HID: '+str(w[WID].HID))
 		print('Type:'+str(w[WID].type))
+		
+		print('Total Approvals: '+str(w[WID].Ptaskapprove))
+		print('Total Rejects: '+str(w[WID].Ptaskreject))
+		print('Total Tasks: '+str(len(w[WID].PtaskDone)))
+		print('Current Streak: '+str(w[WID].PtaskDoneCurrent))
 		print('Task History:'+str(w[WID].PtaskDone))
-		print('SocketID:'+str(w[WID].Socket))
+
 		print('Profile Points:')
 		print('    Branch:'+str(w[WID].Pbranch))
 		print('    Leaf:  '+str(w[WID].Pleaf))
-		print('    Sap:   '+str(w[WID].Psap)+'\n\n')
+		print('    Sap:   '+str(w[WID].Psap)+'\n')
+		print('Socket:'+str(w[WID].Socket))
 		
 	# To display List Content
 	@staticmethod
@@ -606,7 +668,7 @@ class W(object):
 			print("WrkMgr APIs: Unknown Error")
 
 #################### INITIALIZE THE WORK MANAGER ##########################
-W.WMinit()		# Automatically adds the 'admin' to pool
+#W.WMinit()		# Automatically adds the 'admin' to pool
 
 
 #################### DEVELOPER SPACE ######################################
@@ -618,4 +680,4 @@ if(DEVMODE==True and DUMMYCODE==True):			# Add Dummy Workers To Pool
 	Assigned1=W.assign('leaf','TID1');  Assigned2=W.assign('branch','TID2'); 
 	W.complete(Assigned1,True);			W.complete(Assigned2,False);
 	W.logout(Assigned1);				W.logout(Assigned2);
-	W.displ()
+	W.displ() 

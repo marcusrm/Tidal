@@ -12,6 +12,10 @@ import sys
 sys.path.append("./TaskMgr")
 import TaskMgr as tm
 import ReqBackEnd as rbe
+import WorkMgr as wm
+
+# Initialize the WrkDatabase
+wm.W.WMinit()
 
 app_settings = {
     "login_url": ts.URL_PREFIX+"/login",

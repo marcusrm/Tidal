@@ -10,7 +10,7 @@ import uuid
 from urlparse import urlparse  # py3
 import hashlib
 # Task Tree Imports
-from tree import Tree
+from tree import TaskTree
 import copy
 import myconst
 
@@ -27,8 +27,6 @@ from datetime import datetime
 #debug
 from pdb import set_trace as brk
 
-
-TaskTree    = Tree()
 
 #NOTE! when task can't find anything it should return
 #a blank object with a TYPE of "idle"
@@ -89,48 +87,50 @@ class hitHandler(ta.BaseHandler):
 
 
 def send_task(msg):
-    #print msg
+    print msg['WID'] + '=Socket to write'
     socket = wm.W.get_socket(msg['WID'])
     socket.send_msg(msg_wsh(msg,socket))
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
-    def fill_msg_wsh(self,tid):
+    def fill_msg_wsh(self,tid,mode='ready'):
         msg = tms.new_msg()
         msg = copy.deepcopy(TaskTree.getmsgcp(tid));
         msg['WID']          = self.workerId
         msg['preference']   = self.preference
         #msg['time_start']   = self.time_stamp
         msg['profile']      = self.profile
-        msg['mode']         = 'branch'
+        msg['mode']         = mode
         print "Sending to ws of worker "+msg['WID']
         return msg
 
-    def shake_tree(self):
-        try:
+    def shake_tree(self,mode=None):
+        try:                                            # Get a new task from the tree
+            tq = TaskTree.get_q_elem()                  # get a task to assign
             elem = TaskTree.get_q_len()
-            print 'Task Q length is '+str(elem)
-        except:
-            print '0 elements in queue'
-
-        try:                                                 # get a task to assign
-            tq = TaskTree.get_q_elem()
-            print 'queue id is ' + str(tq)
-        except:
-            print "Exception in shake_tree : No tasks available"
+            print 'shake_tree: NewQlen=' + str(elem) + 'Task got is ' + str(tq)
+        except: 
+            print "Exception in shake_tree : No tasks available, assume tree-building is complete"
             return 
 
         wid = wm.W.assign('branch',tq[1])               # find a free worker
         if(wid):
             ws = wm.W.get_socket(wid)
-            msg = ws.fill_msg_wsh(tq[1])
+           # ws.write_message('Shruthi-try')
+            msg = ws.fill_msg_wsh(tq[1],mode='branch')
             print 'Sending a msg to show task ' + str(tq[1])+'to worker ' + wid
+
+            #important step for sending ready msgs:
+            #hide the mode of the message in preference to know
+            #what content to preview to worker. 
+            msg['preference']=msg['mode']
             msg['mode']="ready"
+            
             send_task(msg)
-            return
-        else:   
-            TaskTree.add_to_q(tq[0],tq[1])
+            #todo:msg = ws.fill_msg_wsh(tq[1])
             return 0
+        else:   
+            TaskTree.add_to_q(tq[0],tq[1])              # Put the task back in the queue
 
     def send_msg(self,msg):
         self.write_message(tornado.escape.json_encode(msg))
@@ -156,6 +156,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         
         TaskTree.save_results(msg)                       # save results of the task
         TaskTree.wait_for_approval(msg['TID'],msg['WID'])# send msg over socket to wait for approval
+        
         TaskTree.ask_approval(msg['TID'])                # send msg to parent to approve
         #KEEP THIS AROUND!!!!:
         #if(task_approved):            
@@ -171,26 +172,35 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         
         print "task callback" 
 
+    def super_callback(self,msg):
+
+        self.shake_tree(mode='super');  
+
     def select_callback(self,msg):
         wm.W.set_type(self.workerId,msg['preference'])
         self.preference = msg['preference']
         self.send_msg(tms.new_msg(mode="idle",WID=self.workerId,TID=""))#fill in params more completely
         print "select callback shake starts"
-        self.shake_tree();                              # Look to match more work and tasks
+        len = TaskTree.get_q_len()                  # Tasks available ?
+        self.shake_tree();                          # Look to match more work and tasks
+           # if(is_fulltree_super()):                    # Check if all nodes have completed supervision
+            #    fill_sapq()                             # Refill the task queue with a sap queue tasks
+                #self.shake_tree()                       # Shake the tree again !
+    #        print "select callback shake fails"
         print "select callback shake returns"
     
     def __init__(self, application, request, **kwargs):
         super(WebSocketHandler, self).__init__(application, request, **kwargs)
         self.workerId = self.get_argument("workerId",None)
         self.hitId = self.get_argument("hitId",None)
-        self.callback = {"select" : self.select_callback,
-                         "idle" : self.idle_callback,
-                         "ready" : self.ready_callback,
-                         "branch" : self.task_callback,
-                         "leaf" : self.task_callback,
-                         "sap" : self.task_callback,
-                         "super" : self.task_callback,
-                         "logout": self.logout_callback,
+        self.callback = {"select"   : self.select_callback,
+                         "idle"     : self.idle_callback,
+                         "ready"    : self.ready_callback,
+                         "branch"   : self.task_callback,
+                         "leaf"     : self.task_callback,
+                         "sap"      : self.task_callback,
+                         "super"    : self.super_callback,
+                         "logout"   : self.logout_callback,
                      }
         self.time_stamp = datetime.utcnow()
         self.preference = ""

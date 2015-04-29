@@ -19,11 +19,18 @@
              return document.getElementsByName( name );
          };
 
+         function disable_area(id){             
+             $('#'+id).find('input, textarea, button, select').attr('disabled',true);
+         }
+         function enable_area(id){             
+             $('#'+id).find('input, textarea, button, select').attr('disabled',false);
+         }
+
          function hide_all(){
              var x = document.getElementsByClassName('mode');
              var i;
              for (i = 0; i < x.length; i++) {
-                 x[i].style.disabled = true;
+                 disable_area(x[i].id);
                  x[i].style.display = "none";
              }
          }
@@ -85,15 +92,15 @@
 		 "<div style='clear:both;'> \
                                           <b>Original Task"+i+" Instructions:</b> <br> <label id='sap_task"+i+"'></label><br><br>\
                                           <b>Worker Output:</b> <br> <label id='sap_work"+i+"'></label><br><br>\
-                                          <b>Reject it?:</b> <input required id='sap_reject"+i+"' type='checkbox'  value='reject'> <br><br>\
-                                          <b>Rating (bad<->good):</b><input required id='sap_rating"+i+"' type='range'  value='5' min='0' max='10'> \
+                                          <b>Reject it?:</b> <input id='sap_reject"+i+"' type='checkbox'  value='reject'> <br><br>\
+                                          <b>Rating (bad<->good):</b><input id='sap_rating"+i+"' type='range'  value='5' min='0' max='10'> \
                                           
       </div><br>"
                  byId('SapForm').innerHTML += html;
              }
              byId('SapForm').innerHTML += "<b>Your Work:</b><br><textarea name='sap_data' id='sap_data'\
              class='box' type='text' placeholder='Leaf Task Space' maxlength='500'\
-             style='width:350px; height:150px; float:left' required> </textarea>"
+             style='width:350px; height:150px; float:left' required></textarea>"
 
          }
          
@@ -206,13 +213,15 @@
              byId('hide_hud').style.display='none';
              byId('show_hud').style.display='block';
              byId(msg.mode).style.display = 'block';
-             byId(msg.mode).style.disabled = false;
+             enable_area(msg.mode);
+             if(msg.mode == 'ready')
+                 gen_preview();
          }
 
          function gen_preview(){
              console.log("in gen preview");
              byId(msg.preference).style.display = 'block';
-             //$('#'+msg.preference).find('input, textarea, button, select').attr('disabled',true);
+             disable_area(msg.preference);
          }
 
          window.onload = function(){
@@ -244,7 +253,7 @@
                  hide_all();
                  hide_hud();                 
                  byId(msg.mode).style.display = 'block';
-                 $('#'+msg.preference).find('input, textarea, button, select').attr('disabled',false);
+                 enable_area(msg.mode);
                  
                  switch(msg.mode){
                      case "hud": gen_hud();
@@ -301,8 +310,8 @@
 		 var html = " <label><b>SubTask Instructions</b> </label>\
                                           <textarea required name='branch_task"+i+"' id='branch_task"+i+"' class='box' type='text' placeholder='Leaf Task Space' maxlength='500' style='width:350px; height:150px; float:left;'></textarea>\
                                           <label class='field'><br>According to you, should this task be <br></label>\
-                                          <input name='Task"+i+"Pred' type='radio'  value='branchnext'>Branched into subtasks by further by another worker<br>\
-                                          <input name='Task"+i+"Pred' type='radio'  value='leafnext'> Completed by a single worker\
+                                          <input name='Task"+i+"Pred' type='radio'  value='branchnext' checked='checked'>Branched into subtasks by further by another worker<br>\
+                                          <input name='Task"+i+"Pred' type='radio'  value='leafnext' > Completed by a single worker\
 </br >";
                  byId('BranchBranchForm').innerHTML += html;
              }
@@ -374,11 +383,12 @@
 	            <div id="LorB">
 	                <label class="field">You choose to </label>
 	                <input name="choice" type="radio"  value="branch" onclick="LorB_choice()"> Branch This Task Further 
-	                <input name="choice" type="radio"  value="leaf" onclick="LorB_choice()"> Accept It <br>    		
+	                <input name="choice" type="radio"  value="leaf" onclick="LorB_choice()" checked="checked"> Accept It <br>    		
 	            </div>
 	            <div id="BranchSelect"></div>
 	            <div id="BranchLeafForm"></div>
 	            <div id="BranchBranchForm"></div>
+                    <br>
 	            <input type="submit" style='clear:both;float:left' value="Post Branches as tasks" id="SubmitBranch"> </br>
             </form>
         </div>
@@ -422,7 +432,7 @@
                 The worker completed it as a <label id="super_child_data_type" style="color:red"></label> type node. <br><br>
                 The worker response: <br><label id="super_child_data"></label>
                 <label class='field'><br>Approved </label>
-                <input name='super_approve' id='super_approve' type='checkbox' default='unchecked' value='Approved' required></br >
+                <input name='super_approve' id='super_approve' type='checkbox' default='unchecked' value='Approved' ></br >
                 <textarea name='super_feedback' id='super_feedback' class='box' type='text' placeholder='Feedback' maxlength='500' style='width:350px; height:150px; float:left' <!-- required? -->> </textarea>
                 
 	            <input type="submit" style='clear:both;float:left' value="Submit Supervision" id="SubmitSuper"> </br>

@@ -12,7 +12,7 @@ class Node:
 		self.__children = [] 
 		#Length of children list - no of branches 
 		self.__branches = 0
-		# Task mode - idel, leaf, branch
+		# Task mode - idle, leaf, branch
 		self.__type = 'idle'
 		# Branch/Leaf Worker list for this task 
 		self.__wid = []
@@ -30,6 +30,10 @@ class Node:
 	@property 
 	def children(self):
 		return self.__children
+
+	@property 
+	def type(self):
+		return self.__type;
 
 	@property
 	def parent(self):
@@ -49,7 +53,6 @@ class Node:
 
 	def copy_msg(self,msg):
 		self.__type = msg['mode']			# Update node's current type - leaf/branch/sap stage 
-		
 		# if leaf,update msg with leaf-results and change mode to pending
 		if(msg['mode'] == 'leaf'):			# Handle leaf node
 			if msg['WID'] not in self.__wid:	# Add leaf worker to wid list 
@@ -69,7 +72,7 @@ class Node:
 			#print 'Branch msg is ' + str(msg)
 
 		if(msg['mode'] == 'sap'):			# Add sap worker to wid list 
-			self.__sapwid.append(msg['WID'])	# RJ: in sap mode, does wid mean sap_wid?
+			self.__sapwid.append(msg['WID'])# RJ: in sap mode, does wid mean sap_wid?
 
 		if(msg['mode'] == 'super'):	
 			print "# count super_task_ids and move parent to idle pool on completion "
@@ -77,10 +80,10 @@ class Node:
 
 	def fill_newmsg(self,msg,index=0):
 		# Update new tasks's msg structure					
-		newmsg = self.__msg
-		newmsg['mode']	= msg['branch_data_type'][index]
-		if (newmsg['mode'] == 'leaf'):
-			newmsg['leaf_task']	= msg['branch_data'][index]
+		newmsg 				= self.__msg
+		newmsg['mode']		= msg['branch_data_type'][index]
+		if (newmsg['mode'] 	 == 'leaf'):
+			newmsg['leaf_task']		= msg['branch_data'][index]
 		elif (newmsg['mode'] == 'branch'):
 			newmsg['branch_task']	= msg['branch_data'][index]
 		#print "New msg is " + str(self.__msg)
@@ -94,19 +97,23 @@ class Node:
 		tm.send_task(self.__msg)
 
 	# Notify the worker that they must wait for approval 
-	def notify_worker(self,workid):
-		self.__msg['super_mode']	= 'unapproved'
+	def notify_worker(self,workid,super_mode='unapproved',notify=1):
+		self.__msg['super_mode']	= super_mode
 		self.__msg['WID'] 			= workid
-		tm.send_task(self.__msg)	
+		if(notify == 1):
+			tm.send_task(self.__msg)	
 		return
 
-	def requestmsg(self):
-		self.__msg['branch_task'] 	= 'Hi there, can you help me plan a 5 day trip to NYC ? Some details for planning \
-		1. A cruise ride\
-		2. Shopping\
-		3. Broadway show\
-		4. 3 star Hotels\
-		5. Delta Airlines'
+	def requestmsg(self,req_task=None):
+		if req_task is None:
+			self.__msg['branch_task'] 	= 'Hi there, can you help me plan a 5 day trip to NYC ? Some details for planning \
+			1. A cruise ride\
+			2. Shopping\
+			3. Broadway show\
+			4. 3 star Hotels\
+			5. Delta Airlines'
+		else:
+			self.__msg['branch_task'] = req_task
 
 		self.__msg['mode']			= 'branch'
 		self.__msg['preference']	= 'branch'

@@ -11,6 +11,8 @@ import tidal_settings as ts
 import tidal_amt as t_amt
 import WorkMgr as wm
 
+global worker_count
+worker_count = 0 
 def validate_username_password(target_username,target_password,mode):
     print "in validate username"
     errors = []
@@ -191,16 +193,18 @@ class devLoginHandler(BaseHandler):
                 
 class wrkLoginHandler(BaseHandler):
     def get(self):
+        global worker_count
         workerId = self.get_argument("workerId",None)
         assignmentId = self.get_argument("assignmentId",None)
         hitId = self.get_argument("hitId",None)
         turkSubmitTo = self.get_argument("turkSubmitTo",None)
 
         if(ts.LOCAL_TESTING and workerId is None):
-            workerId = "TESTWORKERID"
-            assignmentId = "TESTASSIGNMENTID"
-            hitId = "TESTHITID"
-            turkSubmitTo = "TESTTURKSUBMITTO"
+            workerId = 'TESTWORKERID'+str(worker_count)
+            assignmentId = "TESTASSIGNMENTID"+str(worker_count)
+            hitId = "TESTHITID"+str(worker_count)
+            turkSubmitTo = "TESTTURKSUBMITTO"+str(worker_count)
+            worker_count += 1
         
         # if(self.request.remote_ip is not AMT_IP):
         #     self.write("not an official request from AMT")
