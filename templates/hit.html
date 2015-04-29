@@ -60,7 +60,7 @@
              msg.mode = "leaf";
              msg.leaf_data = byId("leaftask_text").value;
              ws.send(JSON.stringify(msg));
-             byId('leaf').innerHTML = "Thank you ! Now, wait for your work to be supervised before proceeding... ";
+             //byId('leaf').innerHTML = "Thank you ! Now, wait for your work to be supervised before proceeding... ";
          }
          
          function send_branch() {
@@ -80,7 +80,7 @@
                          msg.branch_data_type.push("leaf");
                          
                  }
-                 byId('branch').innerHTML = "Thank you ! Now, wait for your work to be supervised before proceeding... ";
+                 //byId('branch').innerHTML = "Thank you ! Now, wait for your work to be supervised before proceeding... ";
                  ws.send(JSON.stringify(msg));
              }
          }
@@ -135,6 +135,16 @@
          }
          
          function gen_super() {
+
+             if(msg.super_mode == 'unapproved' || msg.super_mode == 'idle'){
+                 byId('SuperForm').style.display = 'none';
+                 byId('SuperWait').style.display = 'block';
+                 return;
+             }
+             
+             ('SuperWait').style.display = 'none';
+             ('SuperForm').style.display = 'block';
+             
              if(msg.super_child_data_type == "leaf"){
                  byId('super_child_data').innerHTML = msg.super_child_data;
              }
@@ -185,7 +195,6 @@
              msg.mode="ready";
              msg.preference=choice;
              ws.send(JSON.stringify(msg));
-             msg.mode="idle";
          }
 
          function gen_hud(){
@@ -280,7 +289,7 @@
                         console.log('gen_sap()');
                         gen_sap();
                         break;
-                     case "super":                  //Supervisor needs to approve the task  
+                     case "super":                  //Supervisor needs to approve the task                        
                         console.log('gen_super()');
                         gen_super();
                          break;
@@ -425,7 +434,8 @@
 
         
         <div class ="mode" id="super">
-            <form name="SuperForm" method="post" onsubmit="send_super()" action="javascript:void(0);">
+            <h2 id="SuperWait">Thank you ! Now, please wait for your work to be supervised before proceeding...</h2>
+            <form id="SuperForm" method="post" onsubmit="send_super()" action="javascript:void(0);">
                 <b>Results of Worker Who Accepted Your Subtask #
                 <label id='super_child_num'></label> :</b> <br>
                 Your Instructions: <label id='super_branch_data'></label> <br>

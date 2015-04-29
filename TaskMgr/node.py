@@ -13,7 +13,7 @@ class Node:
 		#Length of children list - no of branches 
 		self.__branches = 0
 		# Task mode - idle, leaf, branch
-		self.__type = 'idle'
+		self.__type = 'branch'
 		# Branch/Leaf Worker list for this task 
 		self.__wid = []
 		# Sap worker list for this node
@@ -25,7 +25,7 @@ class Node:
 		
 	@property 
 	def id(self):
-		return self.__id;
+		return self.__tid;
 
 	@property 
 	def children(self):
@@ -33,7 +33,7 @@ class Node:
 
 	@property 
 	def wid(self):
-		return self.__wid[-1]
+		return self.__wid.pop()
 
 	@property 
 	def type(self):
@@ -46,7 +46,7 @@ class Node:
 
         def finished_supervision(self):
                 for c in self.__children:
-                        if(c.status == 'pending' || c.status == 'progress'):
+                        if(c.status == 'pending' or c.status == 'progress'):
                                 return False
                 return True
         
@@ -61,7 +61,8 @@ class Node:
                                 return False                        
                 for c in self.__children :
                         self.__msg['sap_task'].append(c.sap_task)
-                        self.__msg['sap_work'].append(c.sap_data)
+                        self.__msg['sap_work'].append(c.sap_data)     
+                        
 
                 return True
         
@@ -127,14 +128,14 @@ class Node:
 		self.__msg['WID'] = self.__wid()
 		tm.send_task(self.__msg)
 
-	# # Notify the worker that they must wait for approval 
-	# def notify_worker(self,workid,super_mode='unapproved',notify=1):
-        #         self.__msg['mode']              = 'super'
-	# 	self.__msg['super_mode']	= super_mode
-	# 	self.__msg['WID'] 			= workid
-	# 	if(notify == 1):
-	# 		tm.send_task(self.__msg)	
-	# 	return
+	# Notify the worker that they must wait for approval 
+	def notify_worker(self,workid,super_mode='unapproved',notify=1):
+                self.__msg['mode']              = 'super'
+		self.__msg['super_mode']	= super_mode
+		self.__msg['WID'] 			= workid
+		if(notify == 1):
+			tm.send_task(self.__msg)	
+		return
 
 	def requestmsg(self,req_task=None):
 		if req_task is None:
