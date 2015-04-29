@@ -1,4 +1,166 @@
 /* (c) Copyright 2015 Purdue University - MIT License*/
+#select h1{
+    text-align:center;
+    width:auto;
+    max-width:1280px;
+    height:auto;
+    border: 3px solid #B8A43C;
+    background-color:#362B3D;
+    font-style: bold;
+    color:#FFFAE3;
+    padding:10px;
+    font-size:1.3em;
+    font-family:Serif;
+    margin-top:2px;
+    margin-bottom:2px;
+}
+
+#instructions{
+    text-align:left;
+    width:auto;
+    max-width:1280px;
+    height:auto;
+    border: 3px solid #362B3D;
+    background-color:#ffffff;
+    color:#362B3D;
+    padding:10px;
+    margin-top:2px;
+    margin-bottom:2px;
+}
+
+#instructions p {
+    text-align:left;
+    font-size:.9em;
+    font-family:Serif;
+}
+
+#selectTask{
+    width:auto;
+    max-width:1280px;
+    height:auto;
+    background-color:#362B3D;
+    font-style: bold;
+    color:#FFFAE3;
+    padding:10px;
+    font-size:1em;
+    font-family:Serif;
+    margin-top:2px;
+    margin-bottom:2px;
+}
+#selectTask p ,#parent p{
+    border:solid #362B3D;
+    background-color: #9775AA;
+    text-align:center;
+    font-size:1.5em;
+    font-family:'Times New Roman';
+    padding: 3px
+
+}
+
+#button{
+    background-color: #fff;
+    width : 150px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius:6px;
+    color: #362B3D;
+    font-family: Sherif;
+    font-size: 1.3em;
+    text-decoration: none;
+    cursor: pointer;
+    border:solid #B8A43C;
+    margin: 5px   
+}
+
+#footer{
+    width:auto;
+    max-width:1280px;
+    height:20px;
+    background-color:#362B3D;
+    font-style: bold;
+    color:#FFFAE3;
+    padding:10px;
+    font-size:.8em;
+    font-family:Serif;
+    margin-top:2px;
+    margin-bottom:2px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius:6px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#show_hud,#show_hud,#logout_but{
+    background-color: #fff;
+    width : 150px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius:6px;
+    color: #362B3D;
+    font-family: Sherif;
+    font-size: 1em;
+    text-decoration: none;
+    cursor: pointer;
+    border:solid #B8A43C;
+    margin-right:30px;
+    margin-left:30px;
+    margin-bottom: 5px;
+}
+
+#idle,#readybranch_instructions{
+    width:auto;
+    height:auto;
+    max-width:1280px;
+    background-color:#362B3D;
+    color:#FFFAE3;
+    padding:10px;
+    font-size:.9em;
+    font-family:Serif;
+    margin-top:10px;
+    margin-bottom:10px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius:6px;
+}
+
+#branchform,#BranchSelect{
+    width:auto;
+    height:auto;
+    max-width:1280px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+}
+
+#BranchSelect{
+border:solid #362B3D;
+}
+
+#branch_instructions{
+    width:auto;
+    height:auto;
+    max-width:1280px;
+    background-color:#362B3D;
+    color:#FFFAE3;
+    padding:10px;
+    font-size:.9em;
+    font-family:Serif;
+    margin-top:10px;
+    margin-bottom:10px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius:6px;
+}
+#warn{
+    color:red;
+    font-size: .75em;
+}
+
+
+/* Task page*/
+
+
+
 
 input#message_input, div.message {
     padding:       0em;
