@@ -1,18 +1,63 @@
 Tidal 
 
 Abstract:
-Various crowd-sourcing platforms such as AMT[1], allow for a conducive online work eco-system that provides fast access to workers and micro-jobs at the user's will. This allows for a host of interesting application venues. We aim at providing a self-regulatory task framework that is capable of solving relatively complex tasks in a timely manner. The task structure is managed through self-supervision, while the worker pool is managed through. An active pool of workers is maintained within AMT[1] to provide workers. to workers.  solve more complex tasks to be broken up and a self-regulated 
+The use of crowd-sourcing platforms for solving complex tasks using sophisticated divide, conquer and merge techniques[2][3] has opened up new avenues in human-computation and crowd-sourcing. A worker retainer model that allows for an on-demand synchronous workforce is presented in [4].
 
-Introduction:
-Crowdsourcing is the process by which information, ideas and services are obtained from generally a large base of online users. Various platforms[1][2][3] are available for crowd-sourcing. The tasks put out by requesters on these platforms range from micro-tasks such as labelling to more involving jobs that require greater involvement. Others such as reCAPTCHA[4] while being used other purposes such as spam prevention, authentication etc. are also used for providing crowd-sourced information. A more detailed taxonomy of such platforms is provided in [4].
-
+This project builds on the task division and solution combination techniques described above through the addition of a self-regulatory mechanism that reduces resource wastage as seen in requester invalidation of sub-trees in [2]. A modified  version of the retention model in [4] is currently implemented. This possibly leads to reduced load on requester to intervene in the task structure creation and the worker model ensures speedy action by the workers. 
 
 
 
+Introduction & Motivation:
+Conventional methods to solve complex tasks involves requesters to break tasks down into micro-tasks that can solved by workers. Results are collected and combined using stitching algorithms. Lesser worker qualification requirements lead to access to a larger worker pool that ultimately results in quicker solutions. However, this limits the complexity of tasks and requires quality checks in place. 
+
+Furthermore, fixing the task break up structure sometimes may not be feasible due to inter-dependencies and sub-task contexts may require updating based on the incoming solutions. 
+
+A thorough understanding of the crowd-platform in addition to the nature of the task is hence required to effectively solve complex tasks. More often than not, this becomes an entry barrier for requesters. 
+
+The price-divide-solve-merge algorithm in turkomatic[2] is a paradigm shift in the way complex tasks are handled on crowd-based systems. Complex tasks are broken in itself and made initial attempts at solving complex tasks through crowd-based division of tasks where requester supervision was possible and lead to higher quality. The authors acknowledge that workers at the top of the task tree must be able to micro-manage sub-trees for higher quality. This also removes the burden and dependency on the requester to frequently check on the tasks. Also, branches are created dynamically without checks and entire sub-trees can be invalidated if the requester chooses to do so.
+ 
+Tidal combines the task structuring concepts described in [2], [3] and the worker retainer model in [4] to yield a self-regulatory task framework that can send out tasks to a synchronous active worker pool. 
+
+The framework eases the barrier for a requester to submit complex tasks. The framework can handle multiple requests from multiple requesters and all resulting sub-tasks are maintained on a priority queue for assignment to workers who're also on a priority queue. 
+
+One of the unique features of our implementation is the self-regulatory task structure. Task structures are dynamically formed by Turkers. The structures aren't formed until approval is provided by a parent branch. Each task can independently request a different kind of worker. 
+
+The retainer model presented in [4] is proven to bring workers to tasks faster than waiting for workers from a larger pool to sign-up to the task. The retainer model works by paying to maintain an active pool within a larger worker pool. This project implements a basic version of this retainer model where workers are rewarded based on the number of tasks they've done. 
+
+Workers are of three types viz. Branchers, responsible for dividing and monitor sub-trees created; Leafers, solve sub-tasks; and Sappers, verify and combine information. Each worker type has it's own priority queue implementation based on a ranking system. 
+
+Overall Process For a Requester:
+1. Login into the Tidal website. 
+2. Fill up a few forms and set budget.
+3. Create request. 
+4. Wait till results are tabulated.
+5. Check back to see results.
+
+Overall Process For a Worker:
+1.Worker accepts a HIT on AMT and chooses a preference for the kind of work they're interested in Eg: branch, leaf or sap
+2.They are put on an idle pool. The worker leaves their web tab open and can do other tasks.
+3.When a task becomes available, it is sent over to the worker over secure websockets. The worker is notified of these tasks on their screen.
+4.Worker may choose to accept it or reject it. Upon rejection, tasks are returned back into the pool.
+5.Once a task is accepted, the worker may choose to further divide the task or complete it themselves. 
+6.The submitted task is then sent to the parent node for approval. 
+7.If a divide in the structure is allowed, then the originating user will be required to monitor and supervise the resulting sub-nodes.
+8.The worker is released back into the idle pool when all of the children have been approved.
+9.While the workers are waiting for tasks, they are paid.
+10 All payments are dynamically managed within the framework and are tracked based upon the tasks and worker idle time. 
+11 Worker rewards are currently tracked based on the number of tasks they perform.
+
+Special Note on Authorization Manager:
+Cookies are set on worker browsers and requests are only allowed from AMT to prevent inadvertently accessing the website. The security cookies also protect all functions that handle client interactions to improve overall security of the framework. 
+
+Summary:
+The three main modules Authorization Manager, Work Manager and Task Manager take up the tasks of security; worker pool, rewards and payment tracking; and task structure, supervision and results. The framework was built and setup. There was an overwhelming amount of dataflow dependencies within the three modules and each worker. We would like to simplify this further in the v2.0 of the project. 
+
+Future Work:
+Improve upon the retention model, reward system and task manager. In addition, provide support for different kinds of applications such as programming, travel planning etc. Ease asynchronous communication protocols between server and workers. Overall simplification of dataflow. 
+
+##################################################################################
 1. Amazon Mechanical Turk (AMT). https://www.mturk.com
-2. oDesk. https://www.odesk.com
-3. 99designs. https://99designs.com
-4. Von Ahn L., Maurer B., et al.. ReCAPTCHA: human-based character recognition via web security measures. Science, 321:5895, (Sept. 12, 2008), 1465-1468
+2. Kulkarni A., Can M., Hartmann B., Collaboratively crowdsourcing workflows with turkomatic, Proceedings of the ACM 2012 conference on Computer Supported Cooperative Work, February 11-15, 2012, Seattle, Washington, USA 
+3. Kittur A., Boris S., Khamkar S. et al., CrowdForge: Crowdsourcing Complex Work, UIST, October 16-19, 2011, Santa Barbara, CA, USA
+4. Bernstein M S., Brandt J., et al., Crowds in Two Seconds: Enabling Realtime Crowd-Powered Interfaces, UIST, October 16-19, 2011, Santa Barbara, CA, USA
 5. Quinn. A. J., Bederson B. B., Human computation: a survey and taxonomy of a growing field, Proceedings of the SIGCHI Conference on Human Factors in Computing Systems, May 07-12, 2011, Vancouver, BC, Canada
-5. Bernstein M., Miller R.C., et al.. Soylent: A Word Processor with a Crowd Inside. Proc. UIST 2010.
-
