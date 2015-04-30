@@ -1,0 +1,129 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script>
+    </script>
+    <link rel="stylesheet" href="foundation.css"/>
+    <script src="../assets/js/modernizr.js"></script>
+  </head>
+  
+  <body>
+
+    <div class="row">
+      <div class="large-12 columns">
+        <div class="nav-bar right">
+          <ul class="button-group">
+            <li><a href="https://github.com/marcusrm/Tidal" class="button">Source Code</a></li>
+            <li><a href="http://hci.ecn.purdue.edu/8008/08/" class="button">Tidal Interface Login</a></li>
+            <li><a href="https://engineering.purdue.edu/~aq/695/15sp/" class="button">Purdue ECE695</a></li>
+          </ul>
+        </div>
+        <h1>Tidal <small>join the rising tide</small></h1>
+        <hr/>
+      </div>
+    </div>
+    
+    <div class="row">
+      
+      <div class="large-9 columns" role="content">
+	
+        <article>
+	  
+          <h3><a href="#">Managing Workers</a></h3>
+          <h6>Written by <a href="#">Nikhil Jali</a> on April 10, 2015.</h6>
+	  
+          <div class="row">
+            <div class="large-6 columns">
+
+	      <p>The Worker Manager(WM) performs the task of managing an active worker pool, storing information regarding each worker and keeps track of remuneration. The WM is provided as a self-sufficient class with numerous methods that serve as APIs to the other modules in the project. For each worker, an instance of the worker class is instantiated. However, the interface is with the class itself thereby abstracting away the complexity of handling the low level information of each worker and the pool. The WM has the following functions:
+
+            </div>
+            <div class="large-6 columns">
+              <img src="http://placehold.it/400x240&text=[img]"/>
+            </div>
+          </div>
+	  
+	  <ul>
+	    <li><p>Worker addition and login: </p>
+	      <p>For new workers sign-ups, an object is created in a database. The workers can then be logged in upon which they are added onto an idle list and their profile is made online. Similarly, if the worker or WM chooses to logout the worker after task completion, remuneration is provided and the worker is made offline. These are provided as APIs to the TM and Authentication Manager(AM). Also upon login, socket objects corresponding to each worker are stored within the worker class instance.</p>
+	    </li>
+
+	    <li><p>Worker Profile:  </p>
+	      <p>Each worker's task completion history, remuneration and point system for how good a leafer, brancher or sapper is recorded. The worker profile is provided as a way of also motivating the worker with non-monetary incentives.</p>
+	    </li>
+
+	    <li><p>Active worker pool management:  </p>
+	     <p> Maintaining an active on-demand worker pool is key to being able to complete tasks quickly. This is achieved by keeping the worker's HIT page open and indicating task assignment through alerts in the title of the page. Also, the WM is able to calculate if more workers would be required and interfaces with the AM to put out HITs on Amazon Mechanical Turk(AMT) to add workers to the pool. Similarly, an excess work-force is reduced by remunerating workers on task completion and logging them out.</p> 
+	    </li>
+
+	    <li><p>Worker assignment and task completion:  </p>
+	      <p>This is provided as an API to the TM where specific type of workers can be requested for by providing a Task Id. Upon selecting an active, idle and type of worker, the Worker Id is returned to the TM.  At the same time, the Task Id is linked to the particular worker to keep track of what tasks are being assigned to each worker. Upon task completion, the Worker Id is returned to the idle pool waiting to be given additional tasks and the remuneration counter is updated. If the number of workers far exceed the number required to maintain a sufficient active pool, the excess workers upon task completion are remunerated and logged out of the system.</p>
+	    </li>
+
+        </article>
+
+	
+	
+        <hr/>
+	
+      </div>
+      
+      
+      
+      
+      
+      
+      <aside class="large-3 columns">
+	
+		<div class="panel">
+
+        <ul class="side-nav">
+		        <h5>Main Modules</h5>
+          <li><a href="AMTInt.html">•AMT Interfacing</a></li>
+		  <li><a href="Auth.html">  •Authentication</a></li>
+          <li><a href="Design.html">•Design Implementation</a></li>
+          <li><a href="Task.html">  •Task Management</a></li>
+		  <li><a href="Work.html">  •Worker Management</a></li>
+        </ul>
+		<a href="index.html">Main Page...</a>
+		</div>
+	
+        <div class="panel">
+          <h5>Who we are:</h5>
+          <ul class="side-nav">
+          <li><a href="http://web.ics.purdue.edu/~njali/">Nikhil Jali</a></li>
+          <li><a href="http://web.ics.purdue.edu/~rmarcus/">Richard Marcus (RJ)</a></li>
+          <li><a href="http://web.ics.purdue.edu/~balakrs/">Shruthi Balakrishna</a></li>
+        </ul>
+        </div>
+	
+      </aside>
+      
+      
+    </div>
+    
+    
+    
+    
+    
+    
+    <footer class="row">
+      <div class="large-12 columns">
+        <hr/>
+        <div class="row">
+          <div class="large-6 columns">
+            <p>©2015, Nikhil, Richard & Shruthi. All rights reserved.<br>Created using with zurb.com.</p>
+          </div>
+          <div class="large-6 columns">
+            <ul class="inline-list right">
+	      <li><a href="https://github.com/marcusrm/Tidal" >Source Code</a></li>
+              <li><a href="http://hci.ecn.purdue.edu/8008/08/" >Tidal Interface Login</a></li>
+              <li><a href="https://engineering.purdue.edu/~aq/695/15sp/" >ECE695 Course Website</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

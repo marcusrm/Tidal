@@ -1,0 +1,139 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script>
+    </script>
+    <link rel="stylesheet" href="foundation.css"/>
+    <script src="../assets/js/modernizr.js"></script>
+  </head>
+  
+  <body>
+
+    <div class="row">
+      <div class="large-12 columns">
+        <div class="nav-bar right">
+          <ul class="button-group">
+            <li><a href="https://github.com/marcusrm/Tidal" class="button">Source Code</a></li>
+            <li><a href="http://hci.ecn.purdue.edu/8008/08/" class="button">Tidal Interface Login</a></li>
+            <li><a href="https://engineering.purdue.edu/~aq/695/15sp/" class="button">Purdue ECE695</a></li>
+          </ul>
+        </div>
+        <h1>Tidal <small>join the rising tide</small></h1>
+        <hr/>
+      </div>
+    </div>
+    
+    <div class="row">
+      
+      <div class="large-9 columns" role="content">
+	
+	
+        <article>
+	  
+          <h3><a href="#">Basic Design</a></h3>
+          <h6>Written by <a href="#">RJ, Shruthi, Nikhil</a> on April 8, 2015.</h6>
+
+
+	  <section>
+    	    <p>
+	      For our project we plan to create an automated programming platform which takes complex programming tasks (likely in JavaScript) and recursively divides the work until workers are able to complete the task by individually writing simple functions.  Many ideas concerning worker retention, hierarchies, and motivation were brought up in “The Future of Crowd Work”. We plan to adapt many of these ideas into the current platform designed by Turkomatic, which is already organized in a hierarchical fashion, with “branch” workers breaking up and delegating tasks to other workers further down the subtree. Let us call this hierarchy a “task-tree”, where workers who recursively divide up tasks are called “branchers”, workers who finish a task are “leafers”, and workers who recombine completed tasks are “sappers”. 
+	      This method of “divide and conquer” work-flow is will implement a novel form of 2-level supervision where branch-workers must approve the any actions of their branch-designated children. Essentially, as the tree grows each new node must be approved by its parent and grandparent before being released as a hit. This means that branch workers must remain on the site for a while until their grandchildren are ready to be approved. However, this will not be a problem because while each brancher waits, they are required to write code stubs for each child as well as any test-case programs that they can create before their children finish branching. The stubs are given to leaf-children to assist with implementing code, while test programs are given to future sappers who will recombine the code at this level of the tree. 
+	      <figure style="float:left">
+		<img src="worker_tasks.jpg"  alt="Failed to load img " class="taskimg" id="mypic" > 
+		<figcaption align="middle">Table1 : Ranking parameters for tasks in each category</figcaption>
+	      </figure>
+	      On the other hand, sappers are able to use the test cases developed by the original brancher, as well as see the original input and output requests that were made for this level in the tree. Sappers can give feedback on the quality of the work from both leafers and branchers. Sappers are penalized if their work is rejected further up the tree by sappers closer to the root node.  Currently this is the only way to get feedback for sappers since no other worker class can observe their work. This method encourages branching workers to create easily followed instructions, improves the decision making of the entire tree, and helps make more uniformly structured code.
+	      The question was raised in the “future of crowd work” as to whether or not workers should choose jobs, or platforms should push jobs. We aim to mix the two options by allowing users to choose which jobs they prefer (either branching, leafing, or sapping), but we will rank workers within each field so that we can give the most important jobs to the best workers. For example, when starting a tree we will offer the root node to the best branching workers we have available. Turkomatic noted that they saw great improvements in their task-tree when the first few branches were made by professionals or workers with great care (and also immediate degradation in quality with a lazy brancher early on). 
+	      The ranks of the workers will be determined on a “point” based system, which improves the feedback and rewards for branch-workers. Table 1 shows a loose idea of what some categories might be that help determine the points each worker can score per HIT.
+
+	      This system also leaves a great amount of room for including AI practices and machine learning algorithms that could take advantage of other information to help us guide workers to where they will be most efficient in their chosen field, and how much to reward them</p>
+	    <p style="clear:both">
+	      <b style="font-size: 30px;">Design Implementation Overview</b><br>
+	      <figure style="float:left">
+		<img src="wireframe.jpg" style="padding-right:10px" alt="Failed to load img " class="taskimg" id="mypic" > 
+		<figcaption align="middle">Fig1 : Wireframe of the task design</figcaption>
+	      </figure>
+	      The wireframe for the design we have in mind is shown on Fig1. 
+	      Workers choose whether they want be branchers, sappers, or leafers before they are automatically given tasks for their chosen field.
+	      HITs are automatically chosen for workers who will “preview” the HIT before deciding whether they want to accept it or not. 
+	      As workers accumulate more and more points they will be automatically given higher priority HITs (e.g. branch nodes that are closer to the root), which should improve the overall performance of future task-trees.
+	      Branch workers can only branch a maximum number of children (TBD, likely 5). 
+	      Branch workers will say whether their child tasks are branches or leaves upon creation. 
+	      Branchers have to approve the tasks that their child processes attempt to spawn. 
+	      Branchers have to write stubs for each function that they request and while they’re waiting to supervise they will write test cases. This added work will give branchers a good reason to stay around long enough to supervise their children. 
+	      If we use something like JS/python then we can test compiling in the browser. The leafer can get the test case and use it to test their stuff before they submit it to the sapper (we have to tell them though that the test cases might not be correct and they can submit even though it doesn’t pass the brancher’s test). 
+	      Sappers can rate branchers on how well the test cases helped them debug. This could lead to a “checks and balances” type system between brancher/sapper/leafer.
+	      Payment: BASE_PAY + (score_for_this_hit / max_score_per_hit) * score_bonus
+	      Sappers are recombining the programs at each node back up the tree to make sure everything compiles and actually does what it say it does. If they encounter a problem then they identify which child gave a bad output and we will respawn that subtree. We will do some penalization on that faulty subtree.  
+	      If a leaf gets starved out then we increase the pay over time to some max amount. Then if nobody still takes it until a max timer runs out we then give it back out at a branch task (the root of a new tree, because their supervisors left already). Branchers who approve tasks that get starved out will get negative points.
+	    </p>
+
+	  </section>
+
+
+	  
+        </article>
+	
+        <hr/>
+	
+      </div>
+      
+      
+      
+      
+      
+      
+      <aside class="large-3 columns">
+	
+		<div class="panel">
+
+        <ul class="side-nav">
+		        <h5>Main Modules</h5>
+          <li><a href="AMTInt.html">•AMT Interfacing</a></li>
+		  <li><a href="Auth.html">  •Authentication</a></li>
+          <li><a href="Design.html">•Design Implementation</a></li>
+          <li><a href="Task.html">  •Task Management</a></li>
+		  <li><a href="Work.html">  •Worker Management</a></li>
+        </ul>
+		<a href="index.html">Main Page...</a>
+		</div>
+	
+        <div class="panel">
+          <h5>Who we are:</h5>
+          <ul class="side-nav">
+          <li><a href="http://web.ics.purdue.edu/~njali/">Nikhil Jali</a></li>
+          <li><a href="http://web.ics.purdue.edu/~rmarcus/">Richard Marcus (RJ)</a></li>
+          <li><a href="http://web.ics.purdue.edu/~balakrs/">Shruthi Balakrishna</a></li>
+        </ul>
+        </div>
+	
+      </aside>
+      
+      
+    </div>
+    
+    
+    
+    
+    
+    
+    <footer class="row">
+      <div class="large-12 columns">
+        <hr/>
+        <div class="row">
+          <div class="large-6 columns">
+            <p>©2015, Nikhil, Richard & Shruthi. All rights reserved.<br>Created using with zurb.com.</p>
+          </div>
+          <div class="large-6 columns">
+            <ul class="inline-list right">
+	      <li><a href="https://github.com/marcusrm/Tidal" >Source Code</a></li>
+              <li><a href="http://hci.ecn.purdue.edu/8008/08/" >Tidal Interface Login</a></li>
+              <li><a href="https://engineering.purdue.edu/~aq/695/15sp/" >ECE695 Course Website</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
