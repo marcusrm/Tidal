@@ -86,14 +86,18 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         elem = TaskTree.get_q_len()
         for i in range(1,elem+1):                       # get a task to assign
             tq = TaskTree.get_q_elem()                  # get a task to assign
-            print 'shake_tree: NewQlen=' + str(elem) + 'Task got is ' + str(tq)
-            is_leafer = False
+            if(TaskTree[tq[1]].status != "idle"):
+                continue
             
-            wid = wm.W.assign('branch',tq[1])  # Get a free worker to do the task picked above)
-            if(wid is False and TaskTree[tq[1]].type == 'leaf'):#try for a leafer. this is lazy coding..
-                    wid = wm.W.assign('leaf',tq[1])  # Get a free worker to do the task picked above
-                    is_leafer = True
-                
+            print 'shake_tree: NewQlen=' + str(elem) + 'Task got is ' + str(tq)
+             
+            if(TaskTree[tq[1]].type == 'leaf'):
+                wid = wm.W.assign('leaf',tq[1]) 
+                is_leafer = True
+            else:                
+                wid = wm.W.assign('branch',tq[1])     
+                is_leafer = False
+            
             if(wid):
                 ws = wm.W.get_socket(wid)
                 # ws.write_message('Shruthi-try')
@@ -247,7 +251,6 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             
         elif(msg['mode'] != 'sap'):
             try:
-                brk()
                 TaskTree.ask_approval(msg)     # send msg to parent to approve
             except:
                 #our super probably left... just approve it.
@@ -281,7 +284,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
         self.process_approval(msg)
                         
-        self.shake_tree(mode='super')
+        self.shake_tree()
 
     def select_callback(self,msg):
         wm.W.set_type(self.workerId,msg['preference'])

@@ -94,7 +94,6 @@ class Tree():
 		#print 'Create Node: ' + str(tid)
 		if parent is not None:
 			node = Node(tid,parent,type)				# Create a task node
-                        import pdb; pdb.set_trace()
 			self[tid] = node 					# Add node to the class Dict
 			self[parent].add_child(tid)			# Add to parent's child
 			print self[parent].children
