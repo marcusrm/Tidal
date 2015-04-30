@@ -247,7 +247,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             
         elif(msg['mode'] != 'sap'):
             try:
-                brk()
+               # brk()
                 TaskTree.ask_approval(msg)     # send msg to parent to approve
             except:
                 #our super probably left... just approve it.

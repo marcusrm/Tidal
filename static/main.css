@@ -12,8 +12,8 @@ h1.title{
     padding:10px;
     font-size:2em;
     font-family:'Georgia';
-    margin-top:2px;
-    margin-bottom:2px;
+    margin-top:1em;
+    margin-bottom:1em;
 }
 
 h1{
@@ -24,13 +24,13 @@ h1{
     width:auto;
     max-width:1280px;
     height:auto;
-    border: 3px solid #3B2F00;
-    background-color:#5BFFB0;
+    border: .2px solid #3B2F00;
+    background-color:#0FFF8C;
     color:#3B2F00;
-    padding:10px;
-    margin-top:2px;
-    margin-bottom:2px;
-        font-style: bold;   
+    padding:1em;
+    margin-top:1em;
+    margin-bottom:1em;
+    font-style: bold;   
 }
 
 #instructions p {
@@ -38,6 +38,7 @@ h1{
     font-size:1.1em;
     font-family:'Trebuchet MS';
     font-style: bold;
+    background-color: #0FFF8C;
 }
 
 #selectTask{
@@ -66,7 +67,7 @@ h1{
 }
 
 
-#button{
+.button{
     background-color: #3B2F00;
     width : 100px;
     -moz-border-radius: 5px;
@@ -167,6 +168,18 @@ h1{
     border-radius:6px;
 }
 
+#super.task{
+    height: :auto;
+}
+
+#id.task{
+    height:auto;
+    height: 5em;
+}
+#super_feedback.box{
+    height: 5em;
+
+}
 fieldset
 {
   display: block;
@@ -304,7 +317,20 @@ input#message_input {
      background-color:#5BFFB0;
      margin-left: auto;
      margin-right: auto;
-     margin-bottom:.5em;
+     margin-bottom:2em;
+}
+
+ul.list{
+    display: block;
+    margin: 5em;
+    width:80em;
+}
+.list{
+display: block;
+}
+
+#SuperForm{
+    height: auto;
 }
 .background{
     display: block;

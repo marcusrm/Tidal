@@ -4,10 +4,8 @@
         <title>Task Page</title>
         <script src="https://code.jquery.com/jquery.min.js"></script> 
         
-		<style type="text/css">
-				/*SHRUTHI ADD CSS STUFF HERE*/
-		</style>
-
+	   <link rel="stylesheet" type="text/css" href='{{static_url("main.css")}}' media="screen">  
+		
 		
         <script  type="text/javascript">
          
@@ -409,9 +407,9 @@
 
             <div id='selectTask'>
                 <p>Please select what type of task you would like to do today.</p>
-                <input id='button' type="button" value="Branch" onclick="send_select('branch')"> Split a given task into sub-tasks. You must provide suitable instructions and monitor your sub-tasks. </br>
-        	    <input id='button' type="button" value="Leaf" onclick="send_select('leaf')"> Leafer completes one of the smaller tasks created by an earlier brancher</br>
-        	    <input id='button' type="button" value="Sap" onclick="send_select('sap')">Sappers combine together the subtasks for a given tasks and formats them into a single task </br>
+                <input class='button' type="button" value="Branch" onclick="send_select('branch')"> Split a given task into sub-tasks. You must provide suitable instructions and monitor your sub-tasks. </br>
+        	    <input class='button' type="button" value="Leaf" onclick="send_select('leaf')"> Leafer completes one of the smaller tasks created by an earlier brancher</br>
+        	    <input class='button' type="button" value="Sap" onclick="send_select('sap')">Sappers combine together the subtasks for a given tasks and formats them into a single task </br>
                 <span class='warn'>Note:All task types are paid equally.</span>
             </div>
 
@@ -426,9 +424,9 @@
         
         <div class="mode" id="ready">
             <h1 class='title'>Tidal Trip Planner</h1>
-            <h2>Here is a sample task for you. Preview and accept the hit to do an actual task</h2>
-	    <input id='button' type="button" value="Accept" onclick="send_ready('accept')">
-            <input id='button' type="button" value="Decline" onclick="send_ready('decline')"> </br>
+            <h2>Here is a sample task for you. Preview and accept the hit to do an actual task.</h2>
+	    <input class='button' type="button" value="Accept" style='margin-left:11em;' onclick="send_ready('accept')">
+            <input class='button' type="button" value="Decline" style='color:red;margin-left:8em;'   onclick="send_ready('decline')"> </br>
             <div class='warn' id="ready_timer"></div>
         </div>
         
@@ -436,7 +434,7 @@
             <h1>Tidal Trip Planner</h1>
             <form id='branchform' name="BranchForm" method="post" onsubmit="send_branch()" action="javascript:void(0);">
 	        <input name="parent" id="parent" type="hidden" value = "1">
-                <div class=taskInst>
+                <div class='taskInst'>
                     <legend>Instructions</legend>
                     <ul>
                         <li> Read the task given below carefully.</li>
@@ -446,7 +444,7 @@
                         <li> The branches should capture all the points asked in the main question.</li>
                     </ul>
 
-                    </p><br>
+                    <br>
                     <label class='parent' id="branch_instructions"> Sample Task Inforamation</label>
     	            <div id="LorB">
     	                <label class="field">You choose to </label>
@@ -470,7 +468,7 @@
 	            <div id="LeafForm">
                         <b>Instructions:</b><br><br>
                         <label class='red' id="leaf_instructions"></label><br>
-                        <textarea class='box' name='leaftask_text' id='leaftask_text' type='text' placeholder='Space for Task' maxlength='500' style='width:350px; height:150px;' required>
+                        <textarea class='box' name='leaftask_text' id='leaftask_text' type='text' placeholder='Space for Task' required>
                         </textarea>
                     </div>
 	            <input type="submit" style='clear:both;float:left' value="Submit Task" id="SubmitLeaf"> </br>
@@ -494,18 +492,17 @@
             <h2 id="SuperIdle">Thank you ! Now, please wait to supervise the tasks you just created...</h2>
             <div id="SuperActive">
                 <form id="SuperForm" method="post" onsubmit="send_super()" action="javascript:void(0);">
-                    <b>Results of Worker Who Accepted Your Subtask #
-                        <label id='super_child_num'></label> :</b> <br>
-                        Your Instructions: <label id='super_branch_data'></label> <br>
-                        You predicted this would be a <label id='super_branch_data_type' style="color:red"></label> type node.<br>
-                        The worker completed it as a <label id="super_child_data_type" style="color:red"></label> type node. <br><br>
-                        The worker response: <br><label id="super_child_data"></label>
-                        <label class='field'><br>Approved </label>
-                        <input name='super_approve' id='super_approve' type='checkbox' default='unchecked' value='Approved' ></br>
-                        <textarea name='super_feedback' id='super_feedback' class='box' type='text' placeholder='Feedback' maxlength='500' style='width:350px; height:150px; float:left'></textarea>
+                    <ul class='task'> <legend><b>Results from a Worker Who Accepted Subtask <label id='super_child_num'></label> </b> <br></legend>
+                        <li class='list'> <b>SubTask:</b> <label id='super_branch_data'></label></li> 
+                        <li class='list'><b>Type:</b><label>You classified the subtask as '<b id='super_branch_data_type' style="color:red"></b>' and 
+                        the worker classified it as <b id="super_child_data_type" style="color:red"></b> type.</label></li> 
+                        <li class='list'><b>SubTask response:</b><label id="super_child_data"></label></li> 
+                    </ul>
+                        <label class='field' style='both:clear;margin-left:5em'><b>Approve this response ? </b> </label>
+                        <input name='super_approve' id='super_approve' type='checkbox' value='Approved' ></br>
+                        <textarea name='super_feedback' id='super_feedback' class='box' type='text' placeholder='Have any feedback for the worker? Share them here.'></textarea>
                         
-	                <input type="submit" style='clear:both;float:left' value="Submit Supervision" id="SubmitSuper"> </br>
-                        <br>
+	                <input class='submitbutton' type="submit" style='clear:both;float:left' value="Submit Supervision" id="SubmitSuper"> </br>
                 </form>
             </div>
         </div>
