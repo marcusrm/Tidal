@@ -16,7 +16,7 @@ import WorkMgr as wm
 
 # Start Server
 print('\n\n'+'-'*80)
-print 'Server Started
+print 'Server Started'
 print('-'*80+'\n')
 
 # Initialize the WrkDatabase

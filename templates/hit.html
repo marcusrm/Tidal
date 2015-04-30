@@ -72,6 +72,7 @@
          function send_branch() {
              msg.mode = "branch";
              if(document.BranchForm.choice[1].checked){
+                 msg.leaf_task = msg.branch_task;
                  send_leaf();
              }
              else{                 
