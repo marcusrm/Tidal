@@ -11,6 +11,7 @@ def new_msg(mode="", WID="", TID="", profile={}):
         'time_start'            : None,
         'time_end'              : None,
         'profile'               : profile,
+        'ready_flag'            : "decline",
 
         #branch info
         'branch_task'           : "",       #instructions

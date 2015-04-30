@@ -1,0 +1,18 @@
+Tidal 
+
+Abstract:
+Various crowd-sourcing platforms such as AMT[1], allow for a conducive online work eco-system that provides fast access to workers and micro-jobs at the user's will. This allows for a host of interesting application venues. We aim at providing a self-regulatory task framework that is capable of solving relatively complex tasks in a timely manner. The task structure is managed through self-supervision, while the worker pool is managed through. An active pool of workers is maintained within AMT[1] to provide workers. to workers.  solve more complex tasks to be broken up and a self-regulated 
+
+Introduction:
+Crowdsourcing is the process by which information, ideas and services are obtained from generally a large base of online users. Various platforms[1][2][3] are available for crowd-sourcing. The tasks put out by requesters on these platforms range from micro-tasks such as labelling to more involving jobs that require greater involvement. Others such as reCAPTCHA[4] while being used other purposes such as spam prevention, authentication etc. are also used for providing crowd-sourced information. A more detailed taxonomy of such platforms is provided in [4].
+
+
+
+
+1. Amazon Mechanical Turk (AMT). https://www.mturk.com
+2. oDesk. https://www.odesk.com
+3. 99designs. https://99designs.com
+4. Von Ahn L., Maurer B., et al.. ReCAPTCHA: human-based character recognition via web security measures. Science, 321:5895, (Sept. 12, 2008), 1465-1468
+5. Quinn. A. J., Bederson B. B., Human computation: a survey and taxonomy of a growing field, Proceedings of the SIGCHI Conference on Human Factors in Computing Systems, May 07-12, 2011, Vancouver, BC, Canada
+5. Bernstein M., Miller R.C., et al.. Soylent: A Word Processor with a Crowd Inside. Proc. UIST 2010.
+

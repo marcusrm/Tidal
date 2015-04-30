@@ -3,7 +3,12 @@
     <head>
         <title>Task Page</title>
         <script src="https://code.jquery.com/jquery.min.js"></script> 
-        <link rel="stylesheet" type="text/css" href="{{ static_url("main.css") }}" media="screen">     
+        
+		<style type="text/css">
+				/*SHRUTHI ADD CSS STUFF HERE*/
+		</style>
+
+		
         <script  type="text/javascript">
          
          var workerId = "{{workerId}}";
@@ -49,11 +54,18 @@
          function send_logout(){
              ws.close();
          }
-
+         
          function gen_branch(){
+             byId('choose_leaf').checked = false;
+             byId('choose_branch').checked = false;
+             byId("leaftask_text").value = "";
+             byId("BranchSelect").innerHTML = "";
+	     byId("BranchLeafForm").innerHTML = "";
+	     byId("BranchBranchForm").innerHTML = "";
              byId("branch_instructions").innerHTML = msg.branch_task;
          }
          function gen_leaf(){
+             byId("leaftask_text").value = "";
              byId("leaf_instructions").innerHTML = msg.leaf_task;
          }
          function send_leaf(){
@@ -66,20 +78,21 @@
          
          function send_branch() {
              msg.mode = "branch";
-             if(document.BranchForm.choice[1].checked)
+             if(byId('choose_leaf').checked){
+                 msg.leaf_task = msg.branch_task;
                  send_leaf();
+             }
              else{                 
                  var num = byId('branchnum').value;
                  for(i=0; i<num;i++){
-                    console.log("Branch send")
                      var sub_is_branch = (byName("Task"+i+"Pred")[0]).checked; //leaf = 1
-                     console.log("Branch data is " + byId("branch_task"+i).value);
                      msg.branch_data.push(byId("branch_task"+i).value);
                      if(sub_is_branch)
                          msg.branch_data_type.push("branch");
                      else
                          msg.branch_data_type.push("leaf");
-                         
+
+                     
                  }
                  //byId('branch').innerHTML = "Thank you ! Now, wait for your work to be supervised before proceeding... ";
                  ws.send(JSON.stringify(msg));
@@ -136,15 +149,23 @@
          }
          
          function gen_super() {
-
-             if(msg.super_mode == 'unapproved' || msg.super_mode == 'idle'){
-                 byId('SuperForm').style.display = 'none';
-                 byId('SuperWait').style.display = 'block';
+             console.log("msg super mode: "+msg.super_mode)
+             if(msg.super_mode == 'unapproved'){
+                 byId('SuperActive').style.display = 'none';
+                 byId('SuperUnapproved').style.display = 'block';
+                 byId('SuperIdle').style.display = 'none';
+                 return;
+             }             
+             else if(msg.super_mode == 'idle'){
+                 byId('SuperActive').style.display = 'none';
+                 byId('SuperUnapproved').style.display = 'none';
+                 byId('SuperIdle').style.display = 'block';
                  return;
              }
              
-             ('SuperWait').style.display = 'none';
-             ('SuperForm').style.display = 'block';
+             byId('SuperUnapproved').style.display = 'none';
+             byId('SuperIdle').style.display = 'none';
+             byId('SuperActive').style.display = 'block';
              
              if(msg.super_child_data_type == "leaf"){
                  byId('super_child_data').innerHTML = msg.super_child_data;
@@ -156,6 +177,8 @@
              }
 
              var num = msg.super_child_num;
+             byId('super_feedback').value = "";
+             byId('super_approve').checked = false;
              byId('super_child_num').innerHTML = num;
              byId('super_branch_data').innerHTML = msg.branch_data[num];
              byId('super_branch_data_type').innerHTML = msg.branch_data_type[num];
@@ -167,13 +190,16 @@
                  idle_time = 0;
              }
              idle_clock = setInterval(function() {
-                     idle_time += 1;
-                     if(idle_time > 3600)
-                         send_logout();
-                     byId('idle_timer').innerHTML = "You've been idle for "+idle_time+" Seconds";
+                 idle_time += 1;
+                 if(idle_time > 3600){
+                     console.log("disconnected because of inactivity");
+                     send_logout();
                  }
+                 byId('idle_timer').innerHTML = "You've been idle for "+idle_time+" Seconds";
+             }
                  , 1000);
-         }         
+         }
+         
          function stop_idle_clock(){
              clearInterval(idle_clock);
          }         
@@ -194,7 +220,7 @@
                  start_idle_clock(false);
              hide_all();
              msg.mode="ready";
-             msg.preference=choice;
+             msg.ready_flag=choice;
              ws.send(JSON.stringify(msg));
          }
 
@@ -231,6 +257,10 @@
 
          function gen_preview(){
              console.log("in gen preview");
+             gen_leaf();
+             gen_branch();
+             gen_sap();
+             gen_super();
              byId(msg.preference).style.display = 'block';
              disable_area(msg.preference);
          }
@@ -247,19 +277,27 @@
              
              ws = new WebSocket(ws_url);
              console.log("Websocket created = "+ws_url);
+             
+             setInterval(function() {
+                 var pingmsg = {'mode':'ping'};
+                 ws.send(JSON.stringify(pingmsg));
+                 console.log("pinged websocket");
+             },10000);
 
              ws.onmessage = function(event)
              {
                  var is_idle = (msg.mode == "idle");
                  msg = JSON.parse(event.data);
-
                  
                  /*if(is_idle && msg.mode != "ready"){
                      console.log("another message that was not 'READY' came during an idle state.");
                      msg.mode = "idle";
                      return;
-                 }*/
-                 console.log('Msg mode is '+msg.mode);
+                    }*/
+
+                 console.log("MESSAGE"+JSON.stringify(msg));
+                 
+                 //console.log('Msg mode is '+msg.mode);
                  
                  hide_all();
                  hide_hud();                 
@@ -330,7 +368,7 @@
          }
          function LorB_choice()
          {
-             if(document.BranchForm.choice[1].checked) 
+             if(byId('choose_leaf').checked) 
              { 
                  var html = "<fieldset class='task'> <legend> Complete the task in the space below. </legend> \
       <textarea class='box' name='leaftask' id='leaftask_text' type='text' placeholder='Follow the instructions clearly and provide solutions to the task above. Include as much detail possible to complete the task clearly.' required></textarea></fieldset>"
@@ -413,10 +451,10 @@
     	            <div id="LorB">
     	                <label class="field">You choose to </label>
     	                
-                        <input name="choice" class="radio" type="radio"  id="radio1" value="branch" onclick="LorB_choice()">
+                        <input name="choice" class="radio" type="radio"  id="choose_branch" value="branch" onclick="LorB_choice()">
                         <label for='radio1'>Create sub-tasks</label>
     	                
-                        <input name="choice" class="radio" type="radio"  id="radio2" value="leaf" onclick="LorB_choice()"> 
+                        <input name="choice" class="radio" type="radio"  id="choose_leaf" value="leaf" onclick="LorB_choice()"> 
                         <label for='radio2'>Do by yourself</label><br>    		
     	            </div>
 	               <div id="BranchSelect"></div>
@@ -429,7 +467,6 @@
 
         <div class="mode" id="leaf" >
             <form name="LeafForm" method="post" onsubmit="send_leaf()" action="javascript:void(0);">
-	        <input name="parent" id="parent" type="hidden" value = "1"><!-- what's this? -->
 	            <div id="LeafForm">
                         <b>Instructions:</b><br><br>
                         <label class='red' id="leaf_instructions"></label><br>
@@ -444,7 +481,6 @@
         
         <div class ="mode" id="sap">
             <form name="SapForm" method="post" onsubmit="send_sap()" action="javascript:void(0);">
-	        <input name="parent" id="parent" type="hidden" value = "1"><!-- what's this? -->
 	            <div id="SapForm">
                     </div>
 	            <input type="submit" style='clear:both;float:left' value="Submit Task" id="SubmitSap"> </br>
@@ -454,23 +490,24 @@
 
         
         <div class ="mode" id="super">
-            <h2 id="SuperWait">Thank you ! Now, please wait for your work to be supervised before proceeding...</h2>
-            <form id="SuperForm" method="post" onsubmit="send_super()" action="javascript:void(0);">
-                <b>Results of Worker Who Accepted Your Subtask #
-                <label id='super_child_num'></label> :</b> <br>
-                Your Instructions: <label id='super_branch_data'></label> <br>
-                You predicted this would be a <label id='super_branch_data_type' style="color:red"></label> type node.<br>
-                The worker completed it as a <label id="super_child_data_type" style="color:red"></label> type node. <br><br>
-                The worker response: <br><label id="super_child_data"></label>
-                <label class='field'><br>Approved </label>
-                <input name='super_approve' id='super_approve' type='checkbox' default='unchecked' value='Approved' ></br >
-                <textarea class='box' name='super_feedback' id='super_feedback' class='box' type='text' placeholder='Feedback' maxlength='500' style='width:350px; height:150px; float:left' <!-- required? -->> </textarea>
-                
-	            <input type="submit" style='clear:both;float:left' value="Submit Supervision" id="SubmitSuper"> </br>
-                <br>
-                
-
-            </form>
+            <h2 id="SuperUnapproved">Thank you ! Now, please wait for your work to be supervised before proceeding...</h2>
+            <h2 id="SuperIdle">Thank you ! Now, please wait to supervise the tasks you just created...</h2>
+            <div id="SuperActive">
+                <form id="SuperForm" method="post" onsubmit="send_super()" action="javascript:void(0);">
+                    <b>Results of Worker Who Accepted Your Subtask #
+                        <label id='super_child_num'></label> :</b> <br>
+                        Your Instructions: <label id='super_branch_data'></label> <br>
+                        You predicted this would be a <label id='super_branch_data_type' style="color:red"></label> type node.<br>
+                        The worker completed it as a <label id="super_child_data_type" style="color:red"></label> type node. <br><br>
+                        The worker response: <br><label id="super_child_data"></label>
+                        <label class='field'><br>Approved </label>
+                        <input name='super_approve' id='super_approve' type='checkbox' default='unchecked' value='Approved' ></br>
+                        <textarea name='super_feedback' id='super_feedback' class='box' type='text' placeholder='Feedback' maxlength='500' style='width:350px; height:150px; float:left'></textarea>
+                        
+	                <input type="submit" style='clear:both;float:left' value="Submit Supervision" id="SubmitSuper"> </br>
+                        <br>
+                </form>
+            </div>
         </div>
 
 
