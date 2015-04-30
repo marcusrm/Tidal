@@ -100,7 +100,7 @@
       </div><br>"
                  byId('SapForm').innerHTML += html;
              }
-             byId('SapForm').innerHTML += "<b>Your Work:</b><br><textarea name='sap_data' id='sap_data'\
+             byId('SapForm').innerHTML += "<b>Your Work:</b><br><textarea class='box' name='sap_data' id='sap_data'\
              class='box' type='text' placeholder='Leaf Task Space' maxlength='500'\
              style='width:350px; height:150px; float:left' required></textarea>"
 
@@ -318,12 +318,13 @@
              var num = byId('branchnum').value;
              byId('BranchBranchForm').innerHTML ="";
              for(i=0; i<num;i++){
-		 var html = " <label><b>SubTask Instructions</b> </label>\
-                                          <textarea required name='branch_task"+i+"' id='branch_task"+i+"' class='box' type='text' placeholder='Leaf Task Space' maxlength='500' style='width:350px; height:150px; float:left;'></textarea>\
-                                          <label class='field'><br>According to you, should this task be <br></label>\
-                                          <input name='Task"+i+"Pred' type='radio'  value='branchnext' checked='checked'>Branched into subtasks by further by another worker<br>\
-                                          <input name='Task"+i+"Pred' type='radio'  value='leafnext' > Completed by a single worker\
-</br >";
+		      var html = "<fieldset class='task'> <legend>Subtask"+i+"</legend>\
+                                <b style='float:left;'>Fill instructions for subtask "+i+"</b> </label>\
+                                <textarea required class='box' name='branch_task"+i+"' id='branch_task"+i+"' class='box' type='text' placeholder='Fill out details instructions to perfrom the subtask.Be as specific and clear as you can while describing the subtask for another worker.'></textarea>\
+                                    <div class='radiogrp'>\
+                                          <label class='field'>Is this subtask divisible?</label>\
+                                          <input name='Task"+i+"Pred' class='radio' type='radio'  value='branchnext' checked='checked'>Yes\
+                                          <input name='Task"+i+"Pred' class='radio' type='radio'  value='leafnext' > No</div></fieldset>";
                  byId('BranchBranchForm').innerHTML += html;
              }
          }
@@ -331,8 +332,8 @@
          {
              if(document.BranchForm.choice[1].checked) 
              { 
-                 var html = "<label class='red'>Task Space</label> \
-      <textarea name='leaftask' id='leaftask_text' type='text' placeholder='Space for Task' maxlength='500' style='width:350px; height:150px;' required></textarea>"
+                 var html = "<fieldset class='task'> <legend> Complete the task in the space below. </legend> \
+      <textarea class='box' name='leaftask' id='leaftask_text' type='text' placeholder='Follow the instructions clearly and provide solutions to the task above. Include as much detail possible to complete the task clearly.' required></textarea></fieldset>"
                  byId("BranchLeafForm").innerHTML =html;
                  byId('BranchBranchForm').innerHTML ="";
                  byId('BranchSelect').innerHTML ="";
@@ -359,22 +360,21 @@
         </script>
         
     </head>
-    <body > 
+    <body class = background> 
         
         <div class="mode" id="select">
-            <h1>Welcome to TIDAL Task Force</h1>
+            <h1 class='title'>Welcome to Tidal Trip Planner</h1>
             
             <div id='instructions'>
-            <h2> Task Description <h2>
-            <p>Hi, Tidal is a crowd application for trip planning. It is based on a divide-and-plan idea, where the main task is made into 2 to 5 branches. These branch tasks are furthur made into more branches. When you feel that a given task is small/easy enough to be done by one person, it can be answered instead of branching furthur. To begin working, choose a preferred task-style.</p> 
+            <p>Tidal is a crowd application for trip planning. It is based on a divide-and-plan idea, where the main task is made into 2 to 5 branches. These branch tasks are furthur made into more branches. When you feel that a given task is small/easy enough to be done by one person, it can be answered instead of branching furthur. To begin working, choose a preferred task-style.</p> 
             </div>
 
             <div id='selectTask'>
                 <p>Please select what type of task you would like to do today.</p>
-                <input id='button' type="button" value="Branch" onclick="send_select('branch')"> Branch task involves splitting a given task into sub-tasks. You would need to provide suitable instructions and monitor the sub-tasks that you create. </br>
+                <input id='button' type="button" value="Branch" onclick="send_select('branch')"> Split a given task into sub-tasks. You must provide suitable instructions and monitor your sub-tasks. </br>
         	    <input id='button' type="button" value="Leaf" onclick="send_select('leaf')"> Leafer completes one of the smaller tasks created by an earlier brancher</br>
         	    <input id='button' type="button" value="Sap" onclick="send_select('sap')">Sappers combine together the subtasks for a given tasks and formats them into a single task </br>
-                <span id='warn'>Note:All task types are paid equally.</span>
+                <span class='warn'>Note:All task types are paid equally.</span>
             </div>
 
         </div>
@@ -382,49 +382,62 @@
             <h2> There are currently no tasks to be done. Please wait until one becomes available 
                 and we'll notify you. In the meantime you will still be compensated at the rate of 
                 $1.20 per hour to be on hold.</h2>
-            <div id="idle_timer"></div>
+            <div id="idle_timer" class='warn'></div>
             
         </div>
         
         <div class="mode" id="ready">
-            <h1>Hey! We found you a task! Here's a Preview:</h1>
-	    <input type="button" value="Accept" onclick="send_ready('accept')"> </br>
-            <input type="button" value="Decline" onclick="send_ready('decline')"> </br>
-            <div id="ready_timer"></div>
+            <h1 class='title'>Tidal Trip Planner</h1>
+            <h2>Here is a sample task for you. Preview and accept the hit to do an actual task</h2>
+	    <input id='button' type="button" value="Accept" onclick="send_ready('accept')">
+            <input id='button' type="button" value="Decline" onclick="send_ready('decline')"> </br>
+            <div class='warn' id="ready_timer"></div>
         </div>
         
         <div class="mode" id="branch" >
+            <h1>Tidal Trip Planner</h1>
             <form id='branchform' name="BranchForm" method="post" onsubmit="send_branch()" action="javascript:void(0);">
 	        <input name="parent" id="parent" type="hidden" value = "1">
-                    <p><b>Instructions:</b></p><br>
-                    <label class='parent' id="branch_instructions"></label>
-                    <br><br>
-	            <div id="LorB">
-	                <label class="field">You choose to </label>
-	                <input name="choice" type="radio"  value="branch" onclick="LorB_choice()"> Branch This Task Further 
-	                <input name="choice" type="radio"  value="leaf" onclick="LorB_choice()" checked="checked"> Accept It <br>    		
-	            </div>
-	            <div id="BranchSelect"></div>
+                <div class=taskInst>
+                    <legend>Instructions</legend>
+                    <ul>
+                        <li> Read the task given below carefully.</li>
+                        <li> Decide if you want complete the task. If so, select 'Complete' and answer the task.</li>
+                        <li> If you want to split the task, pick the number of branches you would like to create.
+                        <li> Form questions for each of the branches. These sub-tasks will be posted as hits to workers</li>
+                        <li> The branches should capture all the points asked in the main question.</li>
+                    </ul>
+
+                    </p><br>
+                    <label class='parent' id="branch_instructions"> Sample Task Inforamation</label>
+    	            <div id="LorB">
+    	                <label class="field">You choose to </label>
+    	                
+                        <input name="choice" class="radio" type="radio"  id="radio1" value="branch" onclick="LorB_choice()">
+                        <label for='radio1'>Create sub-tasks</label>
+    	                
+                        <input name="choice" class="radio" type="radio"  id="radio2" value="leaf" onclick="LorB_choice()"> 
+                        <label for='radio2'>Do by yourself</label><br>    		
+    	            </div>
+	               <div id="BranchSelect"></div>
+                </div>
 	            <div id="BranchLeafForm"></div>
 	            <div id="BranchBranchForm"></div>
-                    <br>
-	            <input type="submit" style='clear:both;float:left' value="Post Branches as tasks" id="SubmitBranch"> </br>
+	            <input class='submitbutton' type="submit" style='clear:both;float:left' value="Submit Subtasks as HITs" id="SubmitBranch"> </br>
             </form>
         </div>
 
         <div class="mode" id="leaf" >
             <form name="LeafForm" method="post" onsubmit="send_leaf()" action="javascript:void(0);">
 	        <input name="parent" id="parent" type="hidden" value = "1"><!-- what's this? -->
-	        <fieldset>
 	            <div id="LeafForm">
                         <b>Instructions:</b><br><br>
                         <label class='red' id="leaf_instructions"></label><br>
-                        <textarea name='leaftask_text' id='leaftask_text' type='text' placeholder='Space for Task' maxlength='500' style='width:350px; height:150px;' required>
+                        <textarea class='box' name='leaftask_text' id='leaftask_text' type='text' placeholder='Space for Task' maxlength='500' style='width:350px; height:150px;' required>
                         </textarea>
                     </div>
 	            <input type="submit" style='clear:both;float:left' value="Submit Task" id="SubmitLeaf"> </br>
 	            <!--<input counterforcash>-->
-	        </fieldset>
             </form>
         </div>
 
@@ -432,12 +445,10 @@
         <div class ="mode" id="sap">
             <form name="SapForm" method="post" onsubmit="send_sap()" action="javascript:void(0);">
 	        <input name="parent" id="parent" type="hidden" value = "1"><!-- what's this? -->
-	        <fieldset>
 	            <div id="SapForm">
                     </div>
 	            <input type="submit" style='clear:both;float:left' value="Submit Task" id="SubmitSap"> </br>
 	            <!--<input counterforcash>-->
-	        </fieldset>
             </form>
         </div>
 
@@ -453,7 +464,7 @@
                 The worker response: <br><label id="super_child_data"></label>
                 <label class='field'><br>Approved </label>
                 <input name='super_approve' id='super_approve' type='checkbox' default='unchecked' value='Approved' ></br >
-                <textarea name='super_feedback' id='super_feedback' class='box' type='text' placeholder='Feedback' maxlength='500' style='width:350px; height:150px; float:left' <!-- required? -->> </textarea>
+                <textarea class='box' name='super_feedback' id='super_feedback' class='box' type='text' placeholder='Feedback' maxlength='500' style='width:350px; height:150px; float:left' <!-- required? -->> </textarea>
                 
 	            <input type="submit" style='clear:both;float:left' value="Submit Supervision" id="SubmitSuper"> </br>
                 <br>
@@ -466,7 +477,7 @@
         <div class="hud" id="hud">
             "Sorry, no statistics right now"
         </div>
-    <div id='footer'>
+    <div class='footer'>
 	<input style="float:left" type="button" id='logout_but'value="Logout" onclick="send_logout()">
 	<input style="float:right" type="button" id="show_hud" value="Show Account Stats" onclick="show_hud()">
 	<input style="float:right" type="button" id="hide_hud" value="Hide Account Stats" onclick="hide_hud()"> </br>

@@ -1,118 +1,128 @@
 /* (c) Copyright 2015 Purdue University - MIT License*/
-#select h1{
+h1.title{
     text-align:center;
     width:auto;
     max-width:1280px;
     height:auto;
-    border: 3px solid #B8A43C;
-    background-color:#362B3D;
+
+    border: 3px solid #3B2F00;
+    background-color:#2E7F58;
     font-style: bold;
     color:#FFFAE3;
     padding:10px;
-    font-size:1.3em;
-    font-family:Serif;
+    font-size:2em;
+    font-family:'Georgia';
     margin-top:2px;
     margin-bottom:2px;
 }
 
+h1{
+    text-align:center;
+}
 #instructions{
     text-align:left;
     width:auto;
     max-width:1280px;
     height:auto;
-    border: 3px solid #362B3D;
-    background-color:#ffffff;
-    color:#362B3D;
+    border: 3px solid #3B2F00;
+    background-color:#5BFFB0;
+    color:#3B2F00;
     padding:10px;
     margin-top:2px;
     margin-bottom:2px;
+        font-style: bold;   
 }
 
 #instructions p {
     text-align:left;
-    font-size:.9em;
-    font-family:Serif;
+    font-size:1.1em;
+    font-family:'Trebuchet MS';
+    font-style: bold;
 }
 
 #selectTask{
     width:auto;
     max-width:1280px;
     height:auto;
-    background-color:#362B3D;
+    background-color:#5BFFB0;
     font-style: bold;
-    color:#FFFAE3;
+    color:#3B2F00;
     padding:10px;
     font-size:1em;
     font-family:Serif;
     margin-top:2px;
     margin-bottom:2px;
+    border: 3px solid #3B2F00;
 }
 #selectTask p ,#parent p{
-    border:solid #362B3D;
-    background-color: #9775AA;
+    display: block;
+    border:solid #3B2F00;
+    color: #FFFAE3;
+    background-color: #2E7F58;
     text-align:center;
     font-size:1.5em;
-    font-family:'Times New Roman';
+    font-family:'Trebuchet MS';
     padding: 3px
-
 }
 
+
 #button{
-    background-color: #fff;
-    width : 150px;
+    background-color: #3B2F00;
+    width : 100px;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
-    border-radius:6px;
-    color: #362B3D;
-    font-family: Sherif;
-    font-size: 1.3em;
+    border-radius:8px;
+    color: #0FFF8C;  
+    font-family: 'Georgia';
+    font-size: 1.2em;
     text-decoration: none;
     cursor: pointer;
-    border:solid #B8A43C;
+    border:solid #3B2F00;
+
     margin: 5px   
 }
 
-#footer{
-    width:auto;
-    max-width:1280px;
-    height:20px;
-    background-color:#362B3D;
-    font-style: bold;
-    color:#FFFAE3;
-    padding:10px;
-    font-size:.8em;
-    font-family:Serif;
-    margin-top:2px;
-    margin-bottom:2px;
-    -moz-border-radius: 5px;
-    -webkit-border-radius: 5px;
-    border-radius:6px;
-    text-decoration: none;
-    cursor: pointer;
+#ready{
+     width:55em;
+     height:auto;
+     background-color:#0FFF8C;
+     margin-left: auto;
+     margin-right: auto;
+     margin-bottom:.5em;
+     margin-top: .5em
 }
 
-#show_hud,#show_hud,#logout_but{
-    background-color: #fff;
-    width : 150px;
+
+
+#show_hud,#show_hud,#logout_but,.submitbutton{
+
+    width : 200px;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
     border-radius:6px;
-    color: #362B3D;
-    font-family: Sherif;
+    font-family: Georgia;
     font-size: 1em;
     text-decoration: none;
     cursor: pointer;
-    border:solid #B8A43C;
+    border:solid #0FFF8C;
+    color: #0FFF8C;
+     background-color: #3B2F00;
     margin-right:30px;
     margin-left:30px;
     margin-bottom: 5px;
+    text-align: center;
+}
+
+.submitbutton{
+    margin-left:22em;
 }
 
 #idle,#readybranch_instructions{
     width:auto;
     height:auto;
     max-width:1280px;
-    background-color:#362B3D;
+    background-color:#0CCC70;
+    border:solid #3B2F00;
     color:#FFFAE3;
     padding:10px;
     font-size:.9em;
@@ -125,6 +135,7 @@
 }
 
 #branchform,#BranchSelect{
+
     width:auto;
     height:auto;
     max-width:1280px;
@@ -132,18 +143,87 @@
     -webkit-border-radius: 5px;
 }
 
-#BranchSelect{
-border:solid #362B3D;
+/* Branch tasks boxes */
+/* Text areas */
+.box{
+    clear:both;
+    float: left;
+    width : 60em;
+    height: 15em;
+    border: 3px solid #cccccc;
+    padding: 5px;
+    font-family: Tahoma, sans-serif;
+    margin: 10px;
+}
+
+.task{
+    display: block;
+    width:45em;
+    height:16em;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    padding: 5px;
+    border-radius:6px;
+}
+
+fieldset
+{
+  display: block;
+  width: 8em;
+  margin: 0 auto;
+}
+
+.radiogrp{
+    clear:both;
+    float:left;
+    margin-left: 5em;
+    display: block;
+    width: 25em;
+
+}
+
+/* Instructions with ordered list */
+.taskInst{
+    display: block;
+    border:solid #3B2F00;
+    width:45em;
+    height: auto;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 5px;
+    border-radius:6px;
+    background-color: #0CCC70;
+}
+
+ul.taskInst{
+    display: block;
+    border:solid red;
+    border-radius:6px;
+
+}
+legend
+{
+    text-align: left;
+    color: #fff;
+    background: #ffa20c;
+    border: 1px solid #781351;
+    padding: 2px 6px
 }
 
 #branch_instructions{
+    display: block;
     width:auto;
     height:auto;
     max-width:1280px;
-    background-color:#362B3D;
-    color:#FFFAE3;
+
+    
+    border:solid #0FFF8C;
+    color: #0FFF8C;
+    background-color: #3B2F00;
+
     padding:10px;
-    font-size:.9em;
+    font-size:1.1em;
     font-family:Serif;
     margin-top:10px;
     margin-bottom:10px;
@@ -151,15 +231,14 @@ border:solid #362B3D;
     -webkit-border-radius: 5px;
     border-radius:6px;
 }
-#warn{
-    color:red;
-    font-size: .75em;
+
+.warn{
+    color:#D21D00;
+    font-size: .85em;
 }
 
-
+/* Radio Buttons*/
 /* Task page*/
-
-
 
 
 input#message_input, div.message {
@@ -197,4 +276,41 @@ input#message_input {
     border-width:  2px;
 }
 
+.footer{
+    clear:both;
+    width:68em;
+    max-width:1280px;
+    height:20px;
+    background-color:#2E7F58;
+    font-style: bold;
+    color:#0C7F7E;
+    padding:10px;
+    font-size:.8em;
+    font-family:Serif;
+    margin-left:auto;
+    margin-right:auto;
+    margin-top: .5em;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius:6px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.mode{
+     width:55em;
+     height:auto;
+
+     background-color:#5BFFB0;
+     margin-left: auto;
+     margin-right: auto;
+     margin-bottom:.5em;
+}
+.background{
+    display: block;
+    width:60em;
+    height:auto;
+    background-color:#221A00;
+    margin:.6em;
+}
 /* vim: set fileencoding=utf-8 tabstop=4 shiftwidth=4 expandtab: */
