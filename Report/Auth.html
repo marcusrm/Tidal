@@ -5,7 +5,6 @@
     <script>
     </script>
     <link rel="stylesheet" href="foundation.css"/>
-    <script src="../assets/js/modernizr.js"></script>
   </head>
   
   <body>
@@ -15,7 +14,7 @@
         <div class="nav-bar right">
           <ul class="button-group">
             <li><a href="https://github.com/marcusrm/Tidal" class="button">Source Code</a></li>
-            <li><a href="http://hci.ecn.purdue.edu/8008/08/" class="button">Tidal Interface Login</a></li>
+            <li><a href="https://crowd.ecn.purdue.edu/08/" class="button">Tidal Interface Login</a></li>
             <li><a href="https://engineering.purdue.edu/~aq/695/15sp/" class="button">Purdue ECE695</a></li>
           </ul>
         </div>
@@ -37,15 +36,10 @@
           <h3><a href="#">Authentication</a></h3>
           <h6>Written by <a href="#">RJ Marcus</a> on April 8, 2015.</h6>
 	  
-          <div class="row">
-            <div class="large-6 columns">
+
 	      <p>In order to protect our site from spam, unwanted responses, and general attacks, we decided to use tornado’s built in authenticator to screen our visitors before allowing them to enter. This functionality is very elegant and simple to use because the programmer only needs to include an “@authenticated” decorator at the beginning of a request handler class in order to check to see if the requester has the necessary cookies to be viewing the page.  The tricky part of this implementation is distributing cookies. </p>
 
-            </div>
-            <div class="large-6 columns">
-              <img src="http://placehold.it/400x240&text=[img]"/>
-            </div>
-          </div>
+         
 	  
 	  <p>When accessing the site through any normal URL the user will be redirected to the login page, which is meant for requesters and developers to log into the backend of the site. Here a secure cookie is given to the user once they log in with the correct username and password. The username and password are verified for correct string characteristics before being used in a query (enough characters, no special characters, etc.). Usernames and passwords are kept in a separate database and placeholders are used in queries to this database. </p>
 	  <p>On the other hand, GETs from workers that come from amazon are expected to enter through a specific URL suffix “/hit/”. Workers will be automatically handed a cookie based on their workerID and the hitID for the HIT they are performing. This cookie allows them to stay within the “/hit/” portion of the website and expires when they leave the site. </p>
@@ -67,18 +61,18 @@
 		<div class="panel">
 
         <ul class="side-nav">
-		        <h5>Main Modules</h5>
+		        <h5>Futher Information</h5>
           <li><a href="AMTInt.html">•AMT Interfacing</a></li>
 		  <li><a href="Auth.html">  •Authentication</a></li>
           <li><a href="Design.html">•Design Implementation</a></li>
           <li><a href="Task.html">  •Task Management</a></li>
 		  <li><a href="Work.html">  •Worker Management</a></li>
         </ul>
-		<a href="index.html">Main Page...</a>
+		<a href="index.html">Back to main page...</a>
 		</div>
 	
         <div class="panel">
-          <h5>Who we are:</h5>
+          <h5>About Us</h5>
           <ul class="side-nav">
           <li><a href="http://web.ics.purdue.edu/~njali/">Nikhil Jali</a></li>
           <li><a href="http://web.ics.purdue.edu/~rmarcus/">Richard Marcus (RJ)</a></li>
@@ -106,7 +100,7 @@
           <div class="large-6 columns">
             <ul class="inline-list right">
 	      <li><a href="https://github.com/marcusrm/Tidal" >Source Code</a></li>
-              <li><a href="http://hci.ecn.purdue.edu/8008/08/" >Tidal Interface Login</a></li>
+              <li><a href="https://crowd.ecn.purdue.edu/08/" >Tidal Interface Login</a></li>
               <li><a href="https://engineering.purdue.edu/~aq/695/15sp/" >ECE695 Course Website</a></li>
             </ul>
           </div>
