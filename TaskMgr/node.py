@@ -103,6 +103,9 @@ class Node:
                         
 		return 
 
+        def send(self,msg):
+                tm.send_task(msg)
+        
         def fill_msg(self,msg):
                 self.__msg = msg
 	# def fill_newmsg(self,msg,index=0):

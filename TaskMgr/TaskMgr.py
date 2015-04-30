@@ -164,9 +164,10 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
         #if(TaskTree.is_root(child.id) is False):
         parent = TaskTree[msg['TID']]
+        
         if(TaskTree.finished_supervision(parent.id)):
             parent.state = 'sap' #is this too early? we want someone to come along adn sap this now     
-            wm.W.complete(parent.wid,False)
+            wm.W.complete(parent.wid,True)
             msg['mode']='idle'
         else:
             msg['super_mode']='idle'

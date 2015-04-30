@@ -243,7 +243,7 @@ class Tree():
                                         wm.W.complete(parent.wid,False)
                                         msg['mode']='idle'
                                         msg['WID']=parent.wid
-                                        send_task(msg)
+                                        parent.send(msg)
                         else:
                              print "NOTIFY REQUESTER, task is done.  "       
 
