@@ -163,23 +163,34 @@ class Tree():
 
         def finished_supervision(self,tid):
                 for c in self[tid].children:
-                        if(self[c].status == 'pending' or self[c].status == 'progress'):
+                        if(self[c].status == 'pending' or self[c].status == 'progress' or self[c].status == 'idle'):
                                 return False
+                if(not self[tid].children):
+                        return False
                 return True
                 
-        def generate_branches(self,tid):
-                msg = self[tid].msg()
+        def generate_branches(self,omsg):
+                #msg = self[tid].msg()
                 #add nodes to the tree
                 #print msg
-                branch_count = len(msg['branch_data'])
+                branch_count = len(omsg['branch_data'])
                 print 'Tree.py: '+ str(branch_count)+' new Branch nodes added '
                 for i in range(0,branch_count):
+                        msg = tms.new_msg()
+                        msg['mode'] = omsg['branch_data_type'][i]
+                        if(msg['mode'] == 'branch'):
+                                msg['branch_task'] = omsg['branch_data'][i]
+                        elif(msg['mode'] == 'leaf'):
+                                msg['leaf_task'] = omsg['branch_data'][i]
+                                
                         # Add new node to the tree
                         newtid = hashlib.sha512(str(self.__count)+'haw').hexdigest()	
+                        msg['TID'] = newtid
                         self.__count 	+= 1				
-                        newnode 		 = self.add_node(newtid,tid)
-                        self.__atasks[msg['branch_data_type'][i]] += 1
-                        newnode.fill_newmsg(msg,i);
+                        newnode 		 = self.add_node(newtid,omsg['TID'])
+                        self.__atasks[omsg['branch_data_type'][i]] += 1
+                        #newnode.fill_newmsg(msg,i);
+                        newnode.fill_msg(msg);
                         
         def generate_sap(self,tid):
                 self.add_to_sq(0,tid)
@@ -190,15 +201,24 @@ class Tree():
                 child.status = 'pending'
                 print "ASK APPROVAL"
                 if(self.is_root(child.id) is False):
-                        self[child.parent].notify_super(msg['TID'])
+                        self[child.parent].notify_super(msg)
                         child.notify_worker(msg['WID'],'unapproved') 
 
+        def collect_sap(self,parent):
+                for c in parent.children :
+                        if(self[c].status != "complete"):
+                                return False
+                for c in parent.children :
+                        parent.get_child_sap(self[c])
+                        
+                return True
+                        
         def update_sap(self,child):
                 if(self.is_root(child.id)):
                         #notify requester
                         print"UPDATE SAP ON ROOT, notify req?"
                         return
-                if(self[child.parent].collect_sap(child)):
+                if(self.collect_sap(self[child.parent])):
                         self[child.parent].status = 'sap'
                         self.generate_sap(self[child.parent].id)
                 
@@ -206,7 +226,7 @@ class Tree():
                 child = self[msg['TID']]
                 is_rejected = False
                 for i in range(0,len(msg['sap_reject'])):
-                        if(msg['sap_reject'][i] is False):
+                        if(msg['sap_reject'][i] is True):
                                 redo = self[msg['sap_task_ids'][i]]
                                 redo.status = 'idle'
                                 self.add_to_q(0,redo.id)

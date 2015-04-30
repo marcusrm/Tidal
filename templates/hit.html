@@ -67,16 +67,12 @@
          function send_branch() {
              msg.mode = "branch";
              if(document.BranchForm.choice[1].checked){
-                 console.log("it was in send leaf");
                  send_leaf();
              }
              else{                 
                  var num = byId('branchnum').value;
                  for(i=0; i<num;i++){
-                     console.log("Branch send");
                      var sub_is_branch = (byName("Task"+i+"Pred")[0]).checked; //leaf = 1
-                     console.log("subisbranch:"+sub_is_branch);
-                     console.log("Branch data is " + byId("branch_task"+i).value);
                      msg.branch_data.push(byId("branch_task"+i).value);
                      if(sub_is_branch)
                          msg.branch_data_type.push("branch");
@@ -84,7 +80,6 @@
                          msg.branch_data_type.push("leaf");
 
                      
-                     console.log("MESSAGE="+msg.branch_data);
                  }
                  //byId('branch').innerHTML = "Thank you ! Now, wait for your work to be supervised before proceeding... ";
                  ws.send(JSON.stringify(msg));
@@ -246,6 +241,10 @@
 
          function gen_preview(){
              console.log("in gen preview");
+             gen_leaf();
+             gen_branch();
+             gen_sap();
+             gen_super();
              byId(msg.preference).style.display = 'block';
              disable_area(msg.preference);
          }
@@ -273,8 +272,11 @@
                      console.log("another message that was not 'READY' came during an idle state.");
                      msg.mode = "idle";
                      return;
-                 }*/
-                 console.log('Msg mode is '+msg.mode);
+                    }*/
+
+                 console.log("MESSAGE"+JSON.stringify(msg));
+                 
+                 //console.log('Msg mode is '+msg.mode);
                  
                  hide_all();
                  hide_hud();                 
@@ -409,15 +411,15 @@
         </div>
         
         <div class="mode" id="branch" >
+            <p><b>Instructions:</b></p><br>
+            <label id="branch_instructions"></label>
             <form id='branchform' name="BranchForm" method="post" onsubmit="send_branch()" action="javascript:void(0);">
 	        <input name="parent" id="parent" type="hidden" value = "1">
-                    <p><b>Instructions:</b></p><br>
-                    <label class='parent' id="branch_instructions"></label>
                     <br><br>
 	            <div id="LorB">
 	                <label class="field">You choose to </label>
 	                <input name="choice" type="radio"  value="branch" onclick="LorB_choice()"> Branch This Task Further 
-	                <input name="choice" type="radio"  value="leaf" onclick="LorB_choice()" checked="checked"> Accept It <br>    		
+	                <input name="choice" type="radio"  value="leaf" onclick="LorB_choice()"> Accept It <br>    		
 	            </div>
 	            <div id="BranchSelect"></div>
 	            <div id="BranchLeafForm"></div>

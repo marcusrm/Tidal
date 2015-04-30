@@ -48,27 +48,21 @@ class Node:
                 self.__wid.append(wid)
                 
         def add_sapwid(self,wid):
-                self.__sapwid.append(wid)                
-        
+                self.__sapwid.append(wid)                                
+                
         def sapify_leaf(self):
                 self.status='complete'
+                self.__msg['sap_work'] = self.__msg['leaf_data']
                 self.__msg['sap_data'] = self.__msg['leaf_data']
                 self.__msg['sap_task'] = self.__msg['leaf_task']
-                
-        def collect_sap(self):
-                for c in self.__children :
-                        if(c.status != complete):
-                                return False                        
-                for c in self.__children :
-                        self.__msg['sap_task'].append(c.sap_task)
-                        self.__msg['sap_work'].append(c.sap_data)     
-                        
-
-                return True
         
 	def msg(self):
 		return self.__msg
 
+        def get_child_sap(self,child):                
+                self.__msg['sap_task'].append(child.__msg['sap_task'])
+                self.__msg['sap_work'].append(child.__msg['sap_data'])   
+        
 	def add_child(self,id):
 		self.__children.append(id)
 		self.__branches += 1
@@ -109,24 +103,47 @@ class Node:
                         
 		return 
 
-	def fill_newmsg(self,msg,index=0):
-		# Update new tasks's msg structure					
-		newmsg 				= self.__msg
-		newmsg['mode']		= msg['branch_data_type'][index]
-		if (newmsg['mode'] 	 == 'leaf'):
-			newmsg['leaf_task']		= msg['branch_data'][index]
-		elif (newmsg['mode'] == 'branch'):
-			newmsg['branch_task']	= msg['branch_data'][index]
-		#print "New msg is " + str(self.__msg)
-		return
+        def fill_msg(self,msg):
+                self.__msg = msg
+	# def fill_newmsg(self,msg,index=0):
+	# 	# Update new tasks's msg structure					
+	# 	newmsg 				= self.__msg
+	# 	newmsg['mode']		= msg['branch_data_type'][index]
+	# 	if (newmsg['mode'] 	 == 'leaf'):
+	# 		newmsg['leaf_task']		= msg['branch_data'][index]
+	# 	elif (newmsg['mode'] == 'branch'):
+	# 		newmsg['branch_task']	= msg['branch_data'][index]
+	# 	#print "New msg is " + str(self.__msg)
+	# 	return
 
-	def notify_super(self,taskid):
+	# def notify_super(self,taskid):
+        #         print "NOTIFY SUPER"
+	# 	self.__msg['super_task_id'] = taskid
+        #         #####add some fields for super stuff
+	# 	self.__msg['mode'] = 'super'                
+	# 	self.__msg['super_mode'] = 'approved'
+	# 	self.__msg['WID'] = self.wid
+	# 	tm.send_task(self.__msg)
+
+	def notify_super(self,msg):
                 print "NOTIFY SUPER"
-		self.__msg['super_task_id'] = taskid
+		self.__msg['super_task_id'] = msg['TID']
                 #####add some fields for super stuff
-		self.__msg['mode'] = 'super'
+		self.__msg['mode'] = 'super'                
 		self.__msg['super_mode'] = 'approved'
 		self.__msg['WID'] = self.wid
+
+                
+                if(msg['mode'] == 'branch' and not msg['branch_data']
+                   or msg['mode'] == 'leaf'):
+                        self.__msg['super_child_data'] = msg['leaf_data']
+                        self.__msg['super_child_data_type'] = 'leaf'
+                        self.__type = 'leaf'
+                else:
+                        self.__msg['super_child_data'] = msg['branch_data']
+                        self.__msg['super_child_data_type'] = 'branch'
+                        self.__msg['super_child_data_pred'] = msg['branch_data_type']
+                        
 		tm.send_task(self.__msg)
 
 	# Notify the worker that they must wait for approval 
@@ -151,6 +168,7 @@ class Node:
 
 		self.__msg['mode']			= 'branch'
 		self.__msg['preference']	= 'branch'
+                self.status='idle'
 		return 
 
 
