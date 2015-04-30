@@ -3,7 +3,7 @@ import tidal_msg as tms
 import TaskMgr as tm
 import copy
 class Node:
-	def __init__(self,tid,parent):
+	def __init__(self,tid,parent,type='branch'):
 		#ID is a unique key used to store the nodes as a dictionary
 		self.__tid 		= tid
 		# Parent of this node 
@@ -13,7 +13,7 @@ class Node:
 		#Length of children list - no of branches 
 		self.__branches = 0
 		# Task mode - idle, leaf, branch
-		self.__type = 'branch'
+		self.__type = type
 		# Branch/Leaf Worker list for this task 
 		self.__wid = []
 		# Sap worker list for this node
@@ -61,7 +61,8 @@ class Node:
 
         def get_child_sap(self,child):                
                 self.__msg['sap_task'].append(child.__msg['sap_task'])
-                self.__msg['sap_work'].append(child.__msg['sap_data'])   
+                self.__msg['sap_work'].append(child.__msg['sap_data'])
+                self.__msg['sap_task_ids'].append(child.__msg['TID'])   
         
 	def add_child(self,id):
 		self.__children.append(id)
@@ -79,7 +80,7 @@ class Node:
 				self.__wid.append(msg['WID'])
 			self.__msg['leaf_data']	= msg['leaf_data']
 			self.__msg['leaf_task']	= msg['leaf_task']
-			self.__status			= 'pending'
+			self.status			= 'pending'
 		print 'copy_msg: msg is ' + str(msg)
 
 		if(msg['mode'] == 'branch'):		# Add branch worker to wid list 
@@ -88,7 +89,7 @@ class Node:
 			self.__msg['branch_data']		= copy.copy(msg['branch_data'])
 			self.__msg['branch_task']		= copy.copy(msg['branch_task'])
 			self.__msg['branch_data_type']	= copy.copy(msg['branch_data_type'])
-			self.__status					= 'pending'
+			self.status					= 'pending'
 			#print 'Branch msg is ' + str(msg)
 
 		if(msg['mode'] == 'sap'):			# Add sap worker to wid list 
@@ -127,7 +128,7 @@ class Node:
 	# 	self.__msg['super_mode'] = 'approved'
 	# 	self.__msg['WID'] = self.wid
 	# 	tm.send_task(self.__msg)
-
+        
 	def notify_super(self,msg):
                 print "NOTIFY SUPER"
 		self.__msg['super_task_id'] = msg['TID']
@@ -135,7 +136,7 @@ class Node:
 		self.__msg['mode'] = 'super'                
 		self.__msg['super_mode'] = 'approved'
 		self.__msg['WID'] = self.wid
-
+                self.__msg['super_child_num']=self.children.index(msg['TID'])
                 
                 if(msg['mode'] == 'branch' and not msg['branch_data']
                    or msg['mode'] == 'leaf'):

@@ -54,11 +54,18 @@
          function send_logout(){
              ws.close();
          }
-
+         
          function gen_branch(){
+             byId('choose_leaf').checked = false;
+             byId('choose_branch').checked = false;
+             byId("leaftask_text").value = "";
+             byId("BranchSelect").innerHTML = "";
+	     byId("BranchLeafForm").innerHTML = "";
+	     byId("BranchBranchForm").innerHTML = "";
              byId("branch_instructions").innerHTML = msg.branch_task;
          }
          function gen_leaf(){
+             byId("leaftask_text").value = "";
              byId("leaf_instructions").innerHTML = msg.leaf_task;
          }
          function send_leaf(){
@@ -71,7 +78,7 @@
          
          function send_branch() {
              msg.mode = "branch";
-             if(document.BranchForm.choice[1].checked){
+             if(byId('choose_leaf').checked){
                  msg.leaf_task = msg.branch_task;
                  send_leaf();
              }
@@ -170,6 +177,8 @@
              }
 
              var num = msg.super_child_num;
+             byId('super_feedback').value = "";
+             byId('super_approve').checked = false;
              byId('super_child_num').innerHTML = num;
              byId('super_branch_data').innerHTML = msg.branch_data[num];
              byId('super_branch_data_type').innerHTML = msg.branch_data_type[num];
@@ -183,13 +192,14 @@
              idle_clock = setInterval(function() {
                  idle_time += 1;
                  if(idle_time > 3600){
-                     console.log("tried to idle log me out!");
-                     //send_logout();
+                     console.log("disconnected because of inactivity");
+                     send_logout();
                  }
                  byId('idle_timer').innerHTML = "You've been idle for "+idle_time+" Seconds";
              }
                  , 1000);
-         }         
+         }
+         
          function stop_idle_clock(){
              clearInterval(idle_clock);
          }         
@@ -210,7 +220,7 @@
                  start_idle_clock(false);
              hide_all();
              msg.mode="ready";
-             msg.preference=choice;
+             msg.ready_flag=choice;
              ws.send(JSON.stringify(msg));
          }
 
@@ -267,12 +277,17 @@
              
              ws = new WebSocket(ws_url);
              console.log("Websocket created = "+ws_url);
+             
+             setInterval(function() {
+                 var pingmsg = {'mode':'ping'};
+                 ws.send(JSON.stringify(pingmsg));
+                 console.log("pinged websocket");
+             },10000);
 
              ws.onmessage = function(event)
              {
                  var is_idle = (msg.mode == "idle");
                  msg = JSON.parse(event.data);
-
                  
                  /*if(is_idle && msg.mode != "ready"){
                      console.log("another message that was not 'READY' came during an idle state.");
@@ -352,8 +367,8 @@
          }
          function LorB_choice()
          {
-             if(document.BranchForm.choice[1].checked) 
-             { 
+             if(byId('choose_leaf').checked) 
+             {
                  var html = "<label class='red'>Task Space</label> \
       <textarea name='leaftask' id='leaftask_text' type='text' placeholder='Space for Task' maxlength='500' style='width:350px; height:150px;' required></textarea>"
                  byId("BranchLeafForm").innerHTML =html;
@@ -420,12 +435,11 @@
             <p><b>Instructions:</b></p><br>
             <label id="branch_instructions"></label>
             <form id='branchform' name="BranchForm" method="post" onsubmit="send_branch()" action="javascript:void(0);">
-	        <input name="parent" id="parent" type="hidden" value = "1">
                     <br><br>
 	            <div id="LorB">
-	                <label class="field">You choose to </label>
-	                <input name="choice" type="radio"  value="branch" onclick="LorB_choice()"> Branch This Task Further 
-	                <input name="choice" type="radio"  value="leaf" onclick="LorB_choice()"> Accept It <br>    		
+	                <label class="field">You choose to: </label>
+	                <input id="choose_branch" name="choose" type="radio"  value="branch" onclick="LorB_choice()"> Branch This Task Further 
+	                <input id="choose_leaf" name="choose" type="radio"  value="leaf" onclick="LorB_choice()"> Accept It <br>    		
 	            </div>
 	            <div id="BranchSelect"></div>
 	            <div id="BranchLeafForm"></div>
@@ -437,7 +451,6 @@
 
         <div class="mode" id="leaf" >
             <form name="LeafForm" method="post" onsubmit="send_leaf()" action="javascript:void(0);">
-	        <input name="parent" id="parent" type="hidden" value = "1"><!-- what's this? -->
 	        <fieldset>
 	            <div id="LeafForm">
                         <b>Instructions:</b><br><br>
@@ -454,7 +467,6 @@
         
         <div class ="mode" id="sap">
             <form name="SapForm" method="post" onsubmit="send_sap()" action="javascript:void(0);">
-	        <input name="parent" id="parent" type="hidden" value = "1"><!-- what's this? -->
 	        <fieldset>
 	            <div id="SapForm">
                     </div>

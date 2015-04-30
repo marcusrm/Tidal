@@ -90,10 +90,11 @@ class Tree():
 			self.__amt					= amt 	# Set amount allocated for the task
 			return node
 
-	def add_node(self,tid,parent=None) :
-		#print 'Create Node: ' + str(tid) 
+	def add_node(self,tid,parent=None,type='branch') :
+		#print 'Create Node: ' + str(tid)
 		if parent is not None:
-			node = Node(tid,parent)				# Create a task node
+			node = Node(tid,parent,type)				# Create a task node
+                        import pdb; pdb.set_trace()
 			self[tid] = node 					# Add node to the class Dict
 			self[parent].add_child(tid)			# Add to parent's child
 			print self[parent].children
@@ -169,7 +170,7 @@ class Tree():
                         return False
                 return True
                 
-        def generate_branches(self,omsg):
+        def generate_branches(self,omsg,tid):
                 #msg = self[tid].msg()
                 #add nodes to the tree
                 #print msg
@@ -187,7 +188,8 @@ class Tree():
                         newtid = hashlib.sha512(str(self.__count)+'haw').hexdigest()	
                         msg['TID'] = newtid
                         self.__count 	+= 1				
-                        newnode 		 = self.add_node(newtid,omsg['TID'])
+                        newnode 		 = self.add_node(newtid,tid,msg['mode'])
+                        
                         self.__atasks[omsg['branch_data_type'][i]] += 1
                         #newnode.fill_newmsg(msg,i);
                         newnode.fill_msg(msg);
