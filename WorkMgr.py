@@ -280,10 +280,10 @@ class W(object):
 			elif TaskAccepted==False:
 				w[WID].Ptaskreject	+=1						# Increment worker's total number of rejected tasks
 		
-			# Decide whether to retain worker
-			if(W.WrkPoolMgmt(WID)):							# Automatically logs out current worker/adds new workers if required
-				print('WrkMgr: complete- success. Worker logout initiated. WID-'+str(WID))
-				return True
+			# # Decide whether to retain worker
+			# if(W.WrkPoolMgmt(WID)):							# Automatically logs out current worker/adds new workers if required
+			# 	print('WrkMgr: complete- success. Worker logout initiated. WID-'+str(WID))
+			# 	return True
 				
 			# Add current Worker back to Priority Lists and Idle Lists
 			if WID not in W.Lidle:

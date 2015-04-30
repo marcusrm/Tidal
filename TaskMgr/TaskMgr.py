@@ -158,7 +158,6 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
     def process_approval(self,msg):
         child = TaskTree[msg['super_task_id']]#might be incorrectly using supertaskid
-        parent = TaskTree[msg['TID']]
         if(msg['super_approve'] == False): #rejected, set worker and task idle
             child.status = 'idle'
             wm.W.complete(child.wid,False)
@@ -177,18 +176,20 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                 #tell parent to try to sap
                 TaskTree.update_sap(child)
             else:                         #tell brancher to go super   
-                msg['super_mode']='approved'
+                msg['super_mode']='idle'
                 msg['mode']='super'
-                msg['WID']=child.wid()
+                msg['WID']=child.wid
                 TaskTree.generate_branches(child.id) #generate branches of worker
                 send_task(msg)
 
-        if(parent.finished_supervision()):
-            parent.state = 'sap' #is this too early? we want someone to come along adn sap this now     
-            wm.W.complete(parent.wid,False)
-            msg['mode']='idle'
-            msg['WID']=parent.wid
-            send_task(msg)
+        if(TaskTree.is_root(child.id) is False):
+            parent = TaskTree[msg['TID']]
+            if(TaskTree.finished_supervision(parent.id)):
+                parent.state = 'sap' #is this too early? we want someone to come along adn sap this now     
+                wm.W.complete(parent.wid,False)
+                msg['mode']='idle'
+                msg['WID']=parent.wid
+                send_task(msg)
             
     def send_msg(self,msg):
         self.write_message(tornado.escape.json_encode(msg))
@@ -211,9 +212,16 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             # mins = (msg['time_end']-msg['time_start']).total_seconds() / float(60)
             # print "adding idle mins:", mins
             # wm.W.addIdleTime(self.workerId,mins)
+            
+            if(mode == 'sap'):
+                TaskTree[msg['TID']].add_wid(self.workerId)
+            else:
+                TaskTree[msg['TID']].add_sapwid(self.workerId)
+
             print "ACCEPTED, mode:",mode
             msg['mode']=mode           
             send_task(msg)
+            
         else:
             print "declined"
             msg['mode']='idle'
@@ -228,13 +236,21 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         print "ready callback" #???
 
     def task_callback(self,msg):
-        if(TaskTree[msg['TID']].status != 'sap'):
+        if(TaskTree.is_root(msg['TID']) is True):
+            TaskTree[msg['TID']].status = 'sap'
+            TaskTree[msg['TID']].add_wid(self.workerId)
+            msg['super_approve']=True
+            msg['super_task_id']=msg['TID']
+            TaskTree.save_results(msg)
+            self.process_approval(msg)
+            
+        elif(TaskTree[msg['TID']].status != 'sap'):
             TaskTree.ask_approval(msg)     # send msg to parent to approve
             TaskTree.save_results(msg)     # save results of the task       
         else:
             TaskTree.process_sap(msg)        
-            wm.W.complete(child.wid(),True)
-        
+            wm.W.complete(child.wid,True)
+
         #keep this around... maybe
         #if(task_approved):
             #increase active time

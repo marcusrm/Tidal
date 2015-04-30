@@ -66,6 +66,9 @@ class Tree():
 	def get_task_count(self):				# Returns dict of active task counts
 		return self.__atasks
 
+        def get_parent(self,child):
+                return self[child.parent]
+
         def is_root(self,tid):
                 return (tid == self.__root)
         
@@ -75,6 +78,7 @@ class Tree():
 			return False
 		else :
 			tid 						= hashlib.sha512(str(self.__count)+'haw').hexdigest()
+                        self.__count+=1
 			node 						= Node(tid,None) # Create root node
 			self[tid] 					= node 	# Add node to the class Dict
 			self.__root 				= tid 	# Store root tid
@@ -157,9 +161,16 @@ class Tree():
 
 		#self.display(self,self.__root);
 
+        def finished_supervision(self,tid):
+                for c in self[tid].children:
+                        if(self[c].status == 'pending' or self[c].status == 'progress'):
+                                return False
+                return True
+                
         def generate_branches(self,tid):
                 msg = self[tid].msg()
                 #add nodes to the tree
+                #print msg
                 branch_count = len(msg['branch_data'])
                 print 'Tree.py: '+ str(branch_count)+' new Branch nodes added '
                 for i in range(0,branch_count):
@@ -177,18 +188,19 @@ class Tree():
 		# Send message to supervisor to approve the task
                 child = self[msg['TID']]
                 child.status = 'pending'
+                print "ASK APPROVAL"
                 if(self.is_root(child.id) is False):
-                        child.parent.notify_super(msg['TID'])
-		child.notify_worker(msg['WID'],'unapproved')
+                        self[child.parent].notify_super(msg['TID'])
+                        child.notify_worker(msg['WID'],'unapproved') 
 
         def update_sap(self,child):
                 if(self.is_root(child.id)):
                         #notify requester
                         print"UPDATE SAP ON ROOT, notify req?"
                         return
-                if(child.parent.collect_sap(child)):
-                        child.parent.status = 'sap'
-                        self.generate_sap(child.parent.id)
+                if(self[child.parent].collect_sap(child)):
+                        self[child.parent].status = 'sap'
+                        self.generate_sap(self[child.parent].id)
                 
         def process_sap(self,msg):
                 child = self[msg['TID']]
@@ -204,12 +216,16 @@ class Tree():
                         self.save_results(msg)
                         self.update_sap(child)
                 
-                if(parent.finished_supervision()):
-                        parent.state = 'sap' #is this too early? we want someone to come along adn sap this now     
-                        wm.W.complete(parent.wid,False)
-                        msg['mode']='idle'
-                        msg['WID']=parent.wid
-                        send_task(msg)
+                        if(self.is_root(child.id) is False):
+                                parent = self[child.parent]
+                                if(self.finished_supervision(parent.id)):
+                                        parent.state = 'sap' 
+                                        wm.W.complete(parent.wid,False)
+                                        msg['mode']='idle'
+                                        msg['WID']=parent.wid
+                                        send_task(msg)
+                        else:
+                             print "NOTIFY REQUESTER, task is done.  "       
 
 
 	def get_task(self,type):										# Look for tasks of mode 'type'
