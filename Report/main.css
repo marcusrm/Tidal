@@ -1,0 +1,342 @@
+/* (c) Copyright 2015 Purdue University - MIT License*/
+h1.title{
+    text-align:center;
+    width:auto;
+    max-width:1280px;
+    height:auto;
+
+    border: 3px solid #3B2F00;
+    background-color:#2E7F58;
+    font-style: bold;
+    color:#FFFAE3;
+    padding:10px;
+    font-size:2em;
+    font-family:'Georgia';
+    margin-top:1em;
+    margin-bottom:1em;
+}
+
+h1{
+    text-align:center;
+}
+#instructions{
+    text-align:left;
+    width:auto;
+    max-width:1280px;
+    height:auto;
+    border: .2px solid #3B2F00;
+    background-color:#0FFF8C;
+    color:#3B2F00;
+    padding:1em;
+    margin-top:1em;
+    margin-bottom:1em;
+    font-style: bold;   
+}
+
+#instructions p {
+    text-align:left;
+    font-size:1.1em;
+    font-family:'Trebuchet MS';
+    font-style: bold;
+    background-color: #0FFF8C;
+}
+
+#selectTask{
+    width:auto;
+    max-width:1280px;
+    height:auto;
+    background-color:#5BFFB0;
+    font-style: bold;
+    color:#3B2F00;
+    padding:10px;
+    font-size:1em;
+    font-family:Serif;
+    margin-top:2px;
+    margin-bottom:2px;
+    border: 3px solid #3B2F00;
+}
+#selectTask p ,#parent p{
+    display: block;
+    border:solid #3B2F00;
+    color: #FFFAE3;
+    background-color: #2E7F58;
+    text-align:center;
+    font-size:1.5em;
+    font-family:'Trebuchet MS';
+    padding: 3px
+}
+
+
+.button{
+    background-color: #3B2F00;
+    width : 100px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius:8px;
+    color: #0FFF8C;  
+    font-family: 'Georgia';
+    font-size: 1.2em;
+    text-decoration: none;
+    cursor: pointer;
+    border:solid #3B2F00;
+
+    margin: 5px   
+}
+
+#ready{
+     width:55em;
+     height:auto;
+     background-color:#0FFF8C;
+     margin-left: auto;
+     margin-right: auto;
+     margin-bottom:.5em;
+     margin-top: .5em
+}
+
+
+
+#show_hud,#show_hud,#logout_but,.submitbutton{
+
+    width : 200px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius:6px;
+    font-family: Georgia;
+    font-size: 1em;
+    text-decoration: none;
+    cursor: pointer;
+    border:solid #0FFF8C;
+    color: #0FFF8C;
+     background-color: #3B2F00;
+    margin-right:30px;
+    margin-left:30px;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.submitbutton{
+    margin-left:22em;
+}
+
+#idle,#readybranch_instructions{
+    width:auto;
+    height:auto;
+    max-width:1280px;
+    background-color:#0CCC70;
+    border:solid #3B2F00;
+    color:#FFFAE3;
+    padding:10px;
+    font-size:.9em;
+    font-family:Serif;
+    margin-top:10px;
+    margin-bottom:10px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius:6px;
+}
+
+#branchform,#BranchSelect{
+
+    width:auto;
+    height:auto;
+    max-width:1280px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+}
+
+/* Branch tasks boxes */
+/* Text areas */
+.box{
+    clear:both;
+    float: left;
+    width : 60em;
+    height: 15em;
+    border: 3px solid #cccccc;
+    padding: 5px;
+    font-family: Tahoma, sans-serif;
+    margin: 10px;
+}
+
+.task{
+    display: block;
+    width:45em;
+    height:16em;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    padding: 5px;
+    border-radius:6px;
+}
+
+#super.task{
+    height: :auto;
+}
+
+#id.task{
+    height:auto;
+    height: 5em;
+}
+#super_feedback.box{
+    height: 5em;
+
+}
+fieldset
+{
+  display: block;
+  width: 8em;
+  margin: 0 auto;
+}
+
+.radiogrp{
+    clear:both;
+    float:left;
+    margin-left: 5em;
+    display: block;
+    width: 25em;
+
+}
+
+/* Instructions with ordered list */
+.taskInst{
+    display: block;
+    border:solid #3B2F00;
+    width:45em;
+    height: auto;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 5px;
+    border-radius:6px;
+    background-color: #0CCC70;
+}
+
+ul.taskInst{
+    display: block;
+    border:solid red;
+    border-radius:6px;
+
+}
+legend
+{
+    text-align: left;
+    color: #fff;
+    background: #ffa20c;
+    border: 1px solid #781351;
+    padding: 2px 6px
+}
+
+#branch_instructions{
+    display: block;
+    width:auto;
+    height:auto;
+    max-width:1280px;
+
+    
+    border:solid #0FFF8C;
+    color: #0FFF8C;
+    background-color: #3B2F00;
+
+    padding:10px;
+    font-size:1.1em;
+    font-family:Serif;
+    margin-top:10px;
+    margin-bottom:10px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius:6px;
+}
+
+.warn{
+    color:#D21D00;
+    font-size: .85em;
+}
+
+/* Radio Buttons*/
+/* Task page*/
+
+
+input#message_input, div.message {
+    padding:       0em;
+    margin:        0em;
+    font-size:     16pt
+    font-family:   serif;
+    border-style:  solid;
+    border-radius: 0em;
+    width:         600px;
+}
+
+div.message {
+    border-color:  LightGray;
+    border-width:  1px;
+}
+
+.square{
+    height:100px;
+    width:100px;
+    position: absolute;
+}
+
+.unselectable{
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+input#message_input {
+    border-color:  Green;
+    border-width:  2px;
+}
+
+.footer{
+    clear:both;
+    width:68em;
+    max-width:1280px;
+    height:20px;
+    background-color:#2E7F58;
+    font-style: bold;
+    color:#0C7F7E;
+    padding:10px;
+    font-size:.8em;
+    font-family:Serif;
+    margin-left:auto;
+    margin-right:auto;
+    margin-top: .5em;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius:6px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.mode{
+     width:55em;
+     height:auto;
+
+     background-color:#5BFFB0;
+     margin-left: auto;
+     margin-right: auto;
+     margin-bottom:2em;
+}
+
+ul.list{
+    display: block;
+    margin: 5em;
+    width:80em;
+}
+.list{
+display: block;
+}
+
+#SuperForm{
+    height: auto;
+}
+.background{
+    display: block;
+    width:60em;
+    height:auto;
+    background-color:#221A00;
+    margin:.6em;
+}
+/* vim: set fileencoding=utf-8 tabstop=4 shiftwidth=4 expandtab: */
